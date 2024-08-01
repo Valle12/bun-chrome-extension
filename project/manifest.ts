@@ -1,6 +1,10 @@
 import { defineManifest } from "bun-chrome-extension-config";
+import packageJson from "./package.json";
+const { version } = packageJson;
 
-const manifest = defineManifest({
+const [major, minor, patch] = version.replace(/[^\d.-]+/g, "").split(/[.-]/);
+
+export const manifest = defineManifest({
   name: "bun-project-const",
-  version: "0.0.1",
+  version: `${major}.${minor}.${patch}`,
 });
