@@ -12,9 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
 
-      - run: ls
-      - run: cd config
-      - run: bun link
+      - run: cd config && bun link
       - run: bun install --frozen-lockfile
       - run: cd ..
       - run: bun test
