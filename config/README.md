@@ -1,4 +1,4 @@
-# bun-chrome-extension-config
+# bun-chrome-extension-dev
 
 To install dependencies:
 

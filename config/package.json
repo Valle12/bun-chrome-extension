@@ -1,5 +1,5 @@
 {
-  "name": "bun-chrome-extension-config",
+  "name": "bun-chrome-extension-dev",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
