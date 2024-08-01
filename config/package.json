@@ -1,10 +1,13 @@
 {
-  "name": "bun-project-const",
-  "version": "0.0.1",
+  "name": "bun-chrome-extension-config",
   "type": "module",
-  "module": "index.ts",
-  "dependencies": {
-    "bun-chrome-extension-config": "../config"
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunx tsc"
   },
   "devDependencies": {
     "@types/bun": "latest",

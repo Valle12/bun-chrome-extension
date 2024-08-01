@@ -1,4 +1,4 @@
-# bun-project-const
+# bun-chrome-extension-config
 
 To install dependencies:
 
