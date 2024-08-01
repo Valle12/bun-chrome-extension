@@ -5,9 +5,10 @@ import { readdir } from "fs/promises";
 import { resolve } from "path";
 
 export class Index {
+  PROJECT_CONST = "bun-project-const";
   PROJECT_FOLDER = "project";
-  README_FILE = "README.md";
-  PACKAGE_FILE = "package.json";
+  IGNORE_FILES = ["node_modules", "bun.lockb"];
+  REPLACE_FILES = ["README.md", "package.json", "manifest.ts"];
 
   constructor() {}
 
@@ -21,16 +22,12 @@ export class Index {
     // create local project
     const files = await readdir(resolve(import.meta.dir, this.PROJECT_FOLDER));
     for (const file of files) {
+      if (this.IGNORE_FILES.includes(file)) continue;
       let content = await Bun.file(
         resolve(import.meta.dir, this.PROJECT_FOLDER, file)
       ).text();
-      if (file === this.README_FILE)
-        content = content.replace(`# ${this.PROJECT_FOLDER}`, `# ${answer}`);
-      if (file === this.PACKAGE_FILE)
-        content = content.replace(
-          `"name": "${this.PROJECT_FOLDER}"`,
-          `"name": "${answer}"`
-        );
+      if (this.REPLACE_FILES.includes(file))
+        content = content.replace(this.PROJECT_CONST, answer);
       await Bun.write(resolve(answer, file), content);
     }
   }

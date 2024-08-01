@@ -14,6 +14,7 @@ type OmitManifest = Omit<CleanManifest, "content_scripts">;
 type CustomContentScript = ContentScript & {
   run_at?: "document_start" | "document_end" | "document_idle";
 };
-export type Manifest = OmitManifest & {
+export type FullManifest = OmitManifest & {
   content_scripts?: CustomContentScript[];
 };
+export type Manifest = Omit<FullManifest, "manifest_version">;

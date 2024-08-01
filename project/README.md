@@ -1,4 +1,4 @@
-# project
+# bun-project-const
 
 To install dependencies:
 

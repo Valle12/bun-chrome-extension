@@ -1,15 +1,16 @@
 {
-  "name": "project",
+  "name": "bun-project-const",
   "version": "0.0.1",
-  "module": "index.ts",
   "type": "module",
+  "module": "index.ts",
+  "dependencies": {
+    "bun-chrome-extension-config": "link:bun-chrome-extension-config"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/chrome": "^0.0.269"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "bun-chrome-extension-config": "link:bun-chrome-extension-config"
   }
 }

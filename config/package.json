@@ -1,18 +1,19 @@
 {
   "name": "bun-chrome-extension-config",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunx tsc"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/chrome": "^0.0.269"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
-  },
-  "type": "module",
-  "dependencies": {
-    "@types/chrome": "^0.0.269"
-  },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "rm -rf dist && tsc"
   }
 }
