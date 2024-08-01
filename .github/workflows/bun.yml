@@ -13,6 +13,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - run: cd config && bun link
-      - run: cd project && bun link ../config --save
+      - run: cd project && bun link ./../config --save
       - run: bun install --frozen-lockfile
       - run: bun test
