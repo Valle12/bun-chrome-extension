@@ -1,5 +1,6 @@
 {
   "name": "bun-chrome-extension-dev",
+  "version": "0.0.2",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -7,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "bunx tsc"
+    "build": "rm -rf dist && bunx tsc"
   },
   "devDependencies": {
     "@types/bun": "latest",

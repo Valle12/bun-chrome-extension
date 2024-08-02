@@ -2,9 +2,9 @@
   "name": "bun-project-const",
   "version": "0.0.1",
   "type": "module",
-  "module": "index.ts",
-  "dependencies": {
-    "bun-chrome-extension-config": "../dev"
+  "scripts": {
+    "build": "bun build.ts",
+    "dev": "echo not implemented"
   },
   "devDependencies": {
     "@types/bun": "latest",
