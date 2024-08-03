@@ -1,6 +1,6 @@
 import * as inquirer from "@inquirer/prompts";
-import { beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { readdir } from "fs/promises";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { readdir, rm } from "fs/promises";
 import { resolve } from "path";
 import { Index } from "../index";
 
@@ -10,6 +10,10 @@ describe("index.ts", () => {
     spyOn(Bun, "file");
     spyOn(Bun, "write");
     spyOn(String.prototype, "replace");
+  });
+
+  afterEach(async () => {
+    await rm(resolve("test-project"), { recursive: true });
   });
 
   test("inquirer should get the right answer", async () => {
