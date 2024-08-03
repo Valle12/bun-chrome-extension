@@ -1,4 +1,5 @@
 import { rm } from "fs/promises";
+import { Parser } from "htmlparser2";
 import { resolve } from "path";
 import { FullManifest } from "./types";
 
@@ -10,12 +11,22 @@ export class Build {
 
     const properties: { [key: string]: boolean } = {};
     const entrypoints = this.extractPaths(manifest, properties);
+    const htmlTypeToPaths = await this.extractPathsFromHTML(
+      manifest,
+      properties
+    );
+    for (const key in htmlTypeToPaths) {
+      entrypoints.push(...htmlTypeToPaths[key]);
+    }
+
     if (entrypoints.length !== 0) {
+      console.log("Before build");
       const result = await Bun.build({
         entrypoints,
         minify: true,
         outdir: this.dist,
       });
+      console.log(result);
 
       const length = result.outputs.length;
       for (let i = 0; i < length; i++) {
@@ -40,6 +51,20 @@ export class Build {
           properties.content_scripts = false;
           continue;
         }
+
+        if (
+          properties.popup &&
+          manifest.action &&
+          manifest.action.default_popup
+        ) {
+          const file = result.outputs[0];
+          result.outputs.shift();
+          manifest.action.default_popup = file.path;
+          properties.popup = false;
+          continue;
+        }
+
+        // TODO optionsPage and optionsUI missing
       }
     }
 
@@ -70,5 +95,54 @@ export class Build {
     }
 
     return paths;
+  }
+
+  async extractPathsFromHTML(
+    manifest: FullManifest,
+    properties: { [key: string]: boolean }
+  ) {
+    const htmlTypeToPaths: { [key: string]: string[] } = {};
+
+    if (manifest.action && manifest.action.default_popup) {
+      const content = await Bun.file(
+        resolve(manifest.action.default_popup)
+      ).text();
+      this.parseHTML(content, htmlTypeToPaths, "popup");
+      properties.popup = true;
+    }
+
+    if (manifest.options_page) {
+      const content = await Bun.file(resolve(manifest.options_page)).text();
+      this.parseHTML(content, htmlTypeToPaths, "optionsPage");
+      properties.optionsPage = true;
+    }
+
+    if (manifest.options_ui && manifest.options_ui.page) {
+      const content = await Bun.file(resolve(manifest.options_ui.page)).text();
+      this.parseHTML(content, htmlTypeToPaths, "optionsUI");
+      properties.optionsUI = true;
+    }
+
+    return htmlTypeToPaths;
+  }
+
+  private parseHTML(
+    content: string,
+    htmlTypeToPaths: { [key: string]: string[] },
+    property: string
+  ) {
+    const parser = new Parser({
+      onopentag(name, attributes) {
+        if (name === "script") {
+          if (htmlTypeToPaths[property]) {
+            htmlTypeToPaths[property].push(resolve(attributes.src));
+          } else {
+            htmlTypeToPaths[property] = [resolve(attributes.src)];
+          }
+        }
+      },
+    });
+    parser.write(content);
+    parser.end();
   }
 }

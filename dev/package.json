@@ -1,6 +1,6 @@
 {
   "name": "bun-chrome-extension-dev",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,8 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/chrome": "^0.0.269"
+    "@types/chrome": "^0.0.269",
+    "htmlparser2": "^9.1.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
