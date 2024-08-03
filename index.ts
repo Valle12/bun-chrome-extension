@@ -7,7 +7,7 @@ import { resolve } from "path";
 export class Index {
   PROJECT_CONST = "bun-project-const";
   PROJECT_FOLDER = "project";
-  IGNORE_FILES = ["node_modules", "bun.lockb", "test"];
+  IGNORE_FILES = ["node_modules", "bun.lockb", "test", "dist"];
   REPLACE_FILES = ["README.md", "package.json", "manifest.ts"];
 
   constructor() {}

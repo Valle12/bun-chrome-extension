@@ -9,10 +9,15 @@ type OnlyKnown<T> = {
     : K]: T[K];
 };
 type CleanManifest = OnlyKnown<chrome.runtime.ManifestV3>;
-type ContentScript = NonNullable<CleanManifest["content_scripts"]>[number];
+type ContentScript = Omit<
+  NonNullable<CleanManifest["content_scripts"]>[number],
+  "js"
+>;
 type OmitManifest = Omit<CleanManifest, "content_scripts">;
 type CustomContentScript = ContentScript & {
   run_at?: "document_start" | "document_end" | "document_idle";
+  matches?: string[] | ["<all_urls>"];
+  ts?: string[];
 };
 export type FullManifest = OmitManifest & {
   content_scripts?: CustomContentScript[];

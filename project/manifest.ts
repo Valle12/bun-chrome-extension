@@ -1,4 +1,4 @@
-import { defineManifest } from "bun-chrome-extension-config";
+import { defineManifest } from "bun-chrome-extension-dev";
 import packageJson from "./package.json";
 const { version } = packageJson;
 
