@@ -20,13 +20,11 @@ export class Build {
     }
 
     if (entrypoints.length !== 0) {
-      console.log("Before build");
       const result = await Bun.build({
         entrypoints,
         minify: true,
         outdir: this.dist,
       });
-      console.log(result);
 
       const length = result.outputs.length;
       for (let i = 0; i < length; i++) {
@@ -64,7 +62,25 @@ export class Build {
           continue;
         }
 
-        // TODO optionsPage and optionsUI missing
+        if (properties.optionsPage && manifest.options_page) {
+          const file = result.outputs[0];
+          result.outputs.shift();
+          manifest.options_page = file.path;
+          properties.optionsPage = false;
+          continue;
+        }
+
+        if (
+          properties.optionsUI &&
+          manifest.options_ui &&
+          manifest.options_ui.page
+        ) {
+          const file = result.outputs[0];
+          result.outputs.shift();
+          manifest.options_ui.page = file.path;
+          properties.optionsUI = false;
+          continue;
+        }
       }
     }
 
@@ -104,22 +120,23 @@ export class Build {
     const htmlTypeToPaths: { [key: string]: string[] } = {};
 
     if (manifest.action && manifest.action.default_popup) {
-      const content = await Bun.file(
-        resolve(manifest.action.default_popup)
-      ).text();
-      this.parseHTML(content, htmlTypeToPaths, "popup");
+      const file = resolve(manifest.action.default_popup);
+      const content = await Bun.file(file).text();
+      this.parseHTML(content, htmlTypeToPaths, "popup", file);
       properties.popup = true;
     }
 
     if (manifest.options_page) {
-      const content = await Bun.file(resolve(manifest.options_page)).text();
-      this.parseHTML(content, htmlTypeToPaths, "optionsPage");
+      const file = resolve(manifest.options_page);
+      const content = await Bun.file(file).text();
+      this.parseHTML(content, htmlTypeToPaths, "optionsPage", file);
       properties.optionsPage = true;
     }
 
     if (manifest.options_ui && manifest.options_ui.page) {
-      const content = await Bun.file(resolve(manifest.options_ui.page)).text();
-      this.parseHTML(content, htmlTypeToPaths, "optionsUI");
+      const file = resolve(manifest.options_ui.page);
+      const content = await Bun.file(file).text();
+      this.parseHTML(content, htmlTypeToPaths, "optionsUI", file);
       properties.optionsUI = true;
     }
 
@@ -129,15 +146,17 @@ export class Build {
   private parseHTML(
     content: string,
     htmlTypeToPaths: { [key: string]: string[] },
-    property: string
+    property: string,
+    file: string
   ) {
     const parser = new Parser({
       onopentag(name, attributes) {
         if (name === "script") {
+          const src = resolve(file, "..", attributes.src);
           if (htmlTypeToPaths[property]) {
-            htmlTypeToPaths[property].push(resolve(attributes.src));
+            htmlTypeToPaths[property].push(src);
           } else {
-            htmlTypeToPaths[property] = [resolve(attributes.src)];
+            htmlTypeToPaths[property] = [src];
           }
         }
       },
