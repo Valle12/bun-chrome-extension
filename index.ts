@@ -20,15 +20,18 @@ export class Index {
     });
 
     // create local project
-    const files = await readdir(resolve(import.meta.dir, this.PROJECT_FOLDER));
+    const files = await readdir(resolve(import.meta.dir, this.PROJECT_FOLDER), {
+      withFileTypes: true,
+    });
     for (const file of files) {
-      if (this.IGNORE_FILES.includes(file)) continue;
+      if (this.IGNORE_FILES.includes(file.name)) continue;
+      if (file.isDirectory()) continue;
       let content = await Bun.file(
-        resolve(import.meta.dir, this.PROJECT_FOLDER, file)
+        resolve(import.meta.dir, this.PROJECT_FOLDER, file.name)
       ).text();
-      if (this.REPLACE_FILES.includes(file))
+      if (this.REPLACE_FILES.includes(file.name))
         content = content.replace(this.PROJECT_CONST, answer);
-      await Bun.write(resolve(answer, file), content);
+      await Bun.write(resolve(answer, file.name), content);
     }
   }
 }

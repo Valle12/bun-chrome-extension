@@ -1,22 +1,32 @@
-import { rm } from "fs/promises";
+import { readdir } from "fs/promises";
 import { Parser } from "htmlparser2";
-import { resolve } from "path";
-import { FullManifest } from "./types";
+import { dirname, relative, resolve } from "path";
+import { Attributes, FullManifest, HTMLType, Properties } from "./types";
 
 export class Build {
   dist = resolve(process.cwd(), "dist");
+  public = resolve(process.cwd(), "public");
+  manifest: FullManifest;
 
-  async parseManifest(manifest: FullManifest) {
-    await rm(this.dist, { recursive: true });
+  constructor(manifest: FullManifest) {
+    this.manifest = manifest;
+  }
 
-    const properties: { [key: string]: boolean } = {};
-    const entrypoints = this.extractPaths(manifest, properties);
-    const htmlTypeToPaths = await this.extractPathsFromHTML(
-      manifest,
-      properties
-    );
-    for (const key in htmlTypeToPaths) {
-      entrypoints.push(...htmlTypeToPaths[key]);
+  async parse() {
+    this.parseManifest();
+    this.copyPublic();
+    this.writeManifest();
+  }
+
+  async parseManifest() {
+    const properties: Properties = {};
+    const fileToProperty: { [key: string]: string } = {};
+    const entrypoints = this.extractPaths(properties);
+    const htmlTypes = await this.extractPathsFromHTML(properties);
+    for (const type of htmlTypes) {
+      entrypoints.push(resolve(type.originalURL));
+      if (!type.resolvedScripts) continue;
+      entrypoints.push(...type.resolvedScripts);
     }
 
     if (entrypoints.length !== 0) {
@@ -26,138 +36,262 @@ export class Build {
         outdir: this.dist,
       });
 
-      const length = result.outputs.length;
-      for (let i = 0; i < length; i++) {
-        if (properties.background && manifest.background) {
-          const file = result.outputs[0];
-          result.outputs.shift();
-          manifest.background.service_worker = file.path;
-          properties.background = false;
+      const entrypointsLength = entrypoints.length;
+      for (let i = 0; i < entrypointsLength; i++) {
+        if (
+          properties["background.service_worker"] &&
+          this.manifest.background
+        ) {
+          let file: string;
+          if (fileToProperty[this.manifest.background.service_worker]) {
+            file = fileToProperty[this.manifest.background.service_worker];
+          } else {
+            const build = result.outputs.shift();
+            if (!build) break;
+            file = build.path;
+            fileToProperty[this.manifest.background.service_worker] = file;
+          }
+          this.manifest.background.service_worker = file;
+          properties["background.service_worker"] = false;
           continue;
         }
 
-        if (properties.content_scripts && manifest.content_scripts) {
-          const contentScripts = manifest.content_scripts;
+        if (properties["content_scripts.ts"] && this.manifest.content_scripts) {
+          const contentScripts = this.manifest.content_scripts;
           for (const contentScript of contentScripts) {
             if (!contentScript.ts) continue;
             for (let j = 0; j < contentScript.ts.length; j++) {
-              const file = result.outputs[0];
-              result.outputs.shift();
-              contentScript.ts[j] = file.path;
+              let file: string;
+              if (fileToProperty[contentScript.ts[j]]) {
+                file = fileToProperty[contentScript.ts[j]];
+              } else {
+                const build = result.outputs.shift();
+                if (!build) break;
+                file = build.path;
+                fileToProperty[contentScript.ts[j]] = file;
+              }
+              contentScript.ts[j] = file;
             }
           }
-          properties.content_scripts = false;
+          properties["content_scripts.ts"] = false;
           continue;
         }
 
         if (
-          properties.popup &&
-          manifest.action &&
-          manifest.action.default_popup
+          properties["action.default_popup"] &&
+          this.manifest.action &&
+          this.manifest.action.default_popup
         ) {
-          const file = result.outputs[0];
-          result.outputs.shift();
-          manifest.action.default_popup = file.path;
-          properties.popup = false;
+          let file: string;
+          const build = result.outputs.shift();
+          if (!build) break;
+          if (fileToProperty[this.manifest.action.default_popup]) {
+            file = fileToProperty[this.manifest.action.default_popup];
+          } else {
+            const newHTML = await import(build.path);
+            file = resolve(dirname(build.path), newHTML.default);
+            fileToProperty[this.manifest.action.default_popup] = file;
+          }
+          let content = await Bun.file(file).text();
+          const type = htmlTypes.shift();
+          if (!type) break;
+          const scripts = type.scripts;
+          const resolvedScripts = type.resolvedScripts;
+          if (!scripts || !resolvedScripts) break;
+          for (let j = 0; j < scripts.length; j++) {
+            const script = scripts[j];
+            let resolvedScript: string;
+            if (fileToProperty[resolvedScripts[j]]) {
+              resolvedScript = fileToProperty[resolvedScripts[j]];
+            } else {
+              const buildResolved = result.outputs.shift();
+              if (!buildResolved) break;
+              resolvedScript = buildResolved.path;
+              fileToProperty[resolvedScripts[j]] = resolvedScript;
+            }
+            content = content.replace(script, resolvedScript);
+            await Bun.write(file, content);
+          }
+          this.manifest.action.default_popup = file;
+          properties["action.default_popup"] = false;
           continue;
         }
 
-        if (properties.optionsPage && manifest.options_page) {
-          const file = result.outputs[0];
-          result.outputs.shift();
-          manifest.options_page = file.path;
-          properties.optionsPage = false;
+        if (properties["options_page"] && this.manifest.options_page) {
+          let file: string;
+          const build = result.outputs.shift();
+          if (!build) break;
+          if (fileToProperty[this.manifest.options_page]) {
+            file = fileToProperty[this.manifest.options_page];
+          } else {
+            const newHTML = await import(build.path);
+            file = resolve(dirname(build.path), newHTML.default);
+            fileToProperty[this.manifest.options_page] = file;
+          }
+          let content = await Bun.file(file).text();
+          const type = htmlTypes.shift();
+          if (!type) break;
+          const scripts = type.scripts;
+          const resolvedScripts = type.resolvedScripts;
+          if (!scripts || !resolvedScripts) break;
+          for (let j = 0; j < scripts.length; j++) {
+            const script = scripts[j];
+            let resolvedScript: string;
+            if (fileToProperty[resolvedScripts[j]]) {
+              resolvedScript = fileToProperty[resolvedScripts[j]];
+            } else {
+              const buildResolved = result.outputs.shift();
+              if (!buildResolved) break;
+              resolvedScript = buildResolved.path;
+              fileToProperty[resolvedScripts[j]] = resolvedScript;
+            }
+            content = content.replace(script, resolvedScript);
+            await Bun.write(file, content);
+          }
+          this.manifest.options_page = file;
+          properties["options_page"] = false;
           continue;
         }
 
         if (
-          properties.optionsUI &&
-          manifest.options_ui &&
-          manifest.options_ui.page
+          properties["options_ui.page"] &&
+          this.manifest.options_ui &&
+          this.manifest.options_ui.page
         ) {
-          const file = result.outputs[0];
-          result.outputs.shift();
-          manifest.options_ui.page = file.path;
-          properties.optionsUI = false;
+          let file: string;
+          const build = result.outputs.shift();
+          if (!build) break;
+          if (fileToProperty[this.manifest.options_ui.page]) {
+            file = fileToProperty[this.manifest.options_ui.page];
+          } else {
+            const newHTML = await import(build.path);
+            file = resolve(dirname(build.path), newHTML.default);
+            fileToProperty[this.manifest.options_ui.page] = file;
+          }
+          let content = await Bun.file(file).text();
+          const type = htmlTypes.shift();
+          if (!type) break;
+          const scripts = type.scripts;
+          const resolvedScripts = type.resolvedScripts;
+          if (!scripts || !resolvedScripts) break;
+          for (let j = 0; j < scripts.length; j++) {
+            const script = scripts[j];
+            let resolvedScript: string;
+            if (fileToProperty[resolvedScripts[j]]) {
+              resolvedScript = fileToProperty[resolvedScripts[j]];
+            } else {
+              const buildResolved = result.outputs.shift();
+              if (!buildResolved) break;
+              resolvedScript = buildResolved.path;
+              fileToProperty[resolvedScripts[j]] = resolvedScript;
+            }
+            content = content.replace(script, resolvedScript);
+            await Bun.write(file, content);
+          }
+          this.manifest.options_ui.page = file;
+          properties["options_ui.page"] = false;
           continue;
         }
       }
     }
+  }
 
-    const manifestFile = resolve(this.dist, "manifest.json");
-    const manifestContent = JSON.stringify(manifest, null, 2).replace(
+  async copyPublic() {
+    const files = await readdir(this.public, {
+      recursive: true,
+      withFileTypes: true,
+    });
+    for (const file of files) {
+      if (file.isDirectory()) continue;
+      const filePath = resolve(this.public, file.parentPath, file.name);
+      const source = Bun.file(filePath);
+      const relativeFilePath = relative(this.public, filePath);
+      await Bun.write(resolve(this.dist, "public", relativeFilePath), source);
+    }
+  }
+
+  async writeManifest() {
+    const file = resolve(this.dist, "manifest.json");
+    const content = JSON.stringify(this.manifest, null, 2).replace(
       `"ts"`,
       `"js"`
     );
-    await Bun.write(manifestFile, manifestContent);
+    await Bun.write(file, content);
   }
 
-  extractPaths(manifest: FullManifest, properties: { [key: string]: boolean }) {
+  extractPaths(properties: Properties) {
     const paths: string[] = [];
 
-    if (manifest.background) {
-      paths.push(resolve(manifest.background.service_worker));
-      properties.background = true;
+    if (this.manifest.background) {
+      const file = resolve(this.manifest.background.service_worker);
+      paths.push(file);
+      properties["background.service_worker"] = true;
     }
 
-    if (manifest.content_scripts) {
-      for (const contentScript of manifest.content_scripts) {
+    if (this.manifest.content_scripts) {
+      for (const contentScript of this.manifest.content_scripts) {
         if (!contentScript.ts) continue;
         for (const ts of contentScript.ts) {
-          paths.push(resolve(ts));
+          const file = resolve(ts);
+          paths.push(file);
         }
       }
-      properties.content_scripts = true;
+      properties["content_scripts.ts"] = true;
     }
 
     return paths;
   }
 
-  async extractPathsFromHTML(
-    manifest: FullManifest,
-    properties: { [key: string]: boolean }
-  ) {
-    const htmlTypeToPaths: { [key: string]: string[] } = {};
+  async extractPathsFromHTML(properties: Properties) {
+    const htmlFiles: HTMLType[] = [];
 
-    if (manifest.action && manifest.action.default_popup) {
-      const file = resolve(manifest.action.default_popup);
-      const content = await Bun.file(file).text();
-      this.parseHTML(content, htmlTypeToPaths, "popup", file);
-      properties.popup = true;
+    if (this.manifest.action && this.manifest.action.default_popup) {
+      const type: HTMLType = {
+        originalURL: this.manifest.action.default_popup,
+        property: "action.default_popup",
+      };
+      await this.parseHTML(type);
+      htmlFiles.push(type);
+      properties["action.default_popup"] = true;
     }
 
-    if (manifest.options_page) {
-      const file = resolve(manifest.options_page);
-      const content = await Bun.file(file).text();
-      this.parseHTML(content, htmlTypeToPaths, "optionsPage", file);
-      properties.optionsPage = true;
+    if (this.manifest.options_page) {
+      const type: HTMLType = {
+        originalURL: this.manifest.options_page,
+        property: "options_page",
+      };
+      await this.parseHTML(type);
+      htmlFiles.push(type);
+      properties["options_page"] = true;
     }
 
-    if (manifest.options_ui && manifest.options_ui.page) {
-      const file = resolve(manifest.options_ui.page);
-      const content = await Bun.file(file).text();
-      this.parseHTML(content, htmlTypeToPaths, "optionsUI", file);
-      properties.optionsUI = true;
+    if (this.manifest.options_ui && this.manifest.options_ui.page) {
+      const type: HTMLType = {
+        originalURL: this.manifest.options_ui.page,
+        property: "options_ui.page",
+      };
+      await this.parseHTML(type);
+      htmlFiles.push(type);
+      properties["options_ui.page"] = true;
     }
 
-    return htmlTypeToPaths;
+    return htmlFiles;
   }
 
-  private parseHTML(
-    content: string,
-    htmlTypeToPaths: { [key: string]: string[] },
-    property: string,
-    file: string
-  ) {
+  private async parseHTML(type: HTMLType) {
+    const file = resolve(type.originalURL);
+    const content = await Bun.file(file).text();
     const parser = new Parser({
-      onopentag(name, attributes) {
-        if (name === "script") {
-          const src = resolve(file, "..", attributes.src);
-          if (htmlTypeToPaths[property]) {
-            htmlTypeToPaths[property].push(src);
-          } else {
-            htmlTypeToPaths[property] = [src];
-          }
+      onopentag(name, attributes: Attributes) {
+        if (name !== "script") return;
+        const src = resolve(file, "..", attributes.src);
+
+        if (type.resolvedScripts && type.scripts) {
+          type.resolvedScripts.push(src);
+          type.scripts.push(attributes.src);
+        } else {
+          type.resolvedScripts = [src];
+          type.scripts = [attributes.src];
         }
       },
     });
