@@ -8,7 +8,7 @@ import {
   test,
 } from "bun:test";
 import { rm } from "fs/promises";
-import { resolve } from "path";
+import { resolve, sep } from "path";
 import { Build } from "../build";
 import { defineManifest } from "../manifest.config";
 import type { Properties } from "../types";
@@ -550,7 +550,9 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledTimes(1);
-    expect(build.manifest.action?.default_popup).toContain("dist\\popup-");
+    expect(build.manifest.action?.default_popup).toContain(
+      "dist" + sep + "popup-"
+    );
   });
 
   test("test with options_page info", async () => {
@@ -564,7 +566,9 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledTimes(1);
-    expect(build.manifest.options_page).toContain("dist\\optionsPage-");
+    expect(build.manifest.options_page).toContain(
+      "dist" + sep + "optionsPage-"
+    );
   });
 
   test("test with options_ui info", async () => {
@@ -580,7 +584,9 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledTimes(1);
-    expect(build.manifest.options_ui?.page).toContain("dist\\optionsUI-");
+    expect(build.manifest.options_ui?.page).toContain(
+      "dist" + sep + "optionsUI-"
+    );
   });
 
   test("test two properties pointing to the same file", async () => {
@@ -748,9 +754,15 @@ describe("parseManifest", () => {
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
     expect(ts[0]).toBe(resolve(build.dist, "test2.js"));
-    expect(build.manifest.action?.default_popup).toContain("dist\\popup-");
-    expect(build.manifest.options_page).toContain("dist\\optionsPage-");
-    expect(build.manifest.options_ui?.page).toContain("dist\\optionsUI-");
+    expect(build.manifest.action?.default_popup).toContain(
+      "dist" + sep + "popup-"
+    );
+    expect(build.manifest.options_page).toContain(
+      "dist" + sep + "optionsPage-"
+    );
+    expect(build.manifest.options_ui?.page).toContain(
+      "dist" + sep + "optionsUI-"
+    );
 
     const popup = await Bun.file(build.manifest.action?.default_popup).text();
     expect(popup).toContain(resolve(build.dist, "test3.js"));
