@@ -51,7 +51,9 @@ describe("extractPaths", () => {
     expect(properties["background.service_worker"]).toBeTrue();
     expect(properties["content_scripts.ts"]).toBeUndefined();
     expect(paths.length).toBe(1);
-    expect(paths[0]).toBe(resolve("test1.ts"));
+    const file = resolve("test1.ts");
+    expect(paths[0]).toBe(file);
+    expect(build.manifest.background.service_worker).toBe(file);
   });
 
   test("test with content_scripts info", () => {
@@ -71,7 +73,13 @@ describe("extractPaths", () => {
     expect(properties["background.service_worker"]).toBeUndefined();
     expect(properties["content_scripts.ts"]).toBeTrue();
     expect(paths.length).toBe(1);
-    expect(paths[0]).toBe(resolve("test1.ts"));
+    const file = resolve("test1.ts");
+    expect(paths[0]).toBe(file);
+    const contentScripts = build.manifest.content_scripts;
+    if (!contentScripts) throw new Error("content_scripts is undefined");
+    const ts = contentScripts[0].ts;
+    if (!ts) throw new Error("ts is undefined");
+    expect(ts[0]).toBe(file);
   });
 
   test("test with background and content_scripts info", () => {
@@ -84,7 +92,7 @@ describe("extractPaths", () => {
       },
       content_scripts: [
         {
-          ts: ["test1.ts"],
+          ts: ["test2.ts"],
         },
       ],
     });
@@ -94,8 +102,16 @@ describe("extractPaths", () => {
     expect(properties["background.service_worker"]).toBeTrue();
     expect(properties["content_scripts.ts"]).toBeTrue();
     expect(paths.length).toBe(2);
-    expect(paths[0]).toBe(resolve("src/test1.ts"));
-    expect(paths[1]).toBe(resolve("test1.ts"));
+    const file1 = resolve("src/test1.ts");
+    expect(paths[0]).toBe(file1);
+    const file2 = resolve("test2.ts");
+    expect(paths[1]).toBe(file2);
+    expect(build.manifest.background.service_worker).toBe(file1);
+    const contentScripts = build.manifest.content_scripts;
+    if (!contentScripts) throw new Error("content_scripts is undefined");
+    const ts = contentScripts[0].ts;
+    if (!ts) throw new Error("ts is undefined");
+    expect(ts[0]).toBe(file2);
   });
 
   test("test with multiple ts files", () => {
@@ -115,8 +131,16 @@ describe("extractPaths", () => {
     expect(properties["background.service_worker"]).toBeUndefined();
     expect(properties["content_scripts.ts"]).toBeTrue();
     expect(paths.length).toBe(2);
-    expect(paths[0]).toBe(resolve("test1.ts"));
-    expect(paths[1]).toBe(resolve("src/test2.ts"));
+    const file1 = resolve("test1.ts");
+    expect(paths[0]).toBe(file1);
+    const file2 = resolve("src/test2.ts");
+    expect(paths[1]).toBe(file2);
+    const contentScripts = build.manifest.content_scripts;
+    if (!contentScripts) throw new Error("content_scripts is undefined");
+    const ts = contentScripts[0].ts;
+    if (!ts) throw new Error("ts is undefined");
+    expect(ts[0]).toBe(file1);
+    expect(ts[1]).toBe(file2);
   });
 
   test("test with multiple content_scripts", () => {
@@ -139,8 +163,18 @@ describe("extractPaths", () => {
     expect(properties["background.service_worker"]).toBeUndefined();
     expect(properties["content_scripts.ts"]).toBeTrue();
     expect(paths.length).toBe(2);
-    expect(paths[0]).toBe(resolve("test1.ts"));
-    expect(paths[1]).toBe(resolve("test2.ts"));
+    const file1 = resolve("test1.ts");
+    expect(paths[0]).toBe(file1);
+    const file2 = resolve("test2.ts");
+    expect(paths[1]).toBe(file2);
+    const contentScripts = build.manifest.content_scripts;
+    if (!contentScripts) throw new Error("content_scripts is undefined");
+    const ts = contentScripts[0].ts;
+    if (!ts) throw new Error("ts is undefined");
+    expect(ts[0]).toBe(file1);
+    const ts2 = contentScripts[1].ts;
+    if (!ts2) throw new Error("ts2 is undefined");
+    expect(ts2[0]).toBe(file2);
   });
 
   test("test with everything", () => {
@@ -166,10 +200,24 @@ describe("extractPaths", () => {
     expect(properties["background.service_worker"]).toBeTrue();
     expect(properties["content_scripts.ts"]).toBeTrue();
     expect(paths.length).toBe(4);
-    expect(paths[0]).toBe(resolve("src/test1.ts"));
-    expect(paths[1]).toBe(resolve("test1.ts"));
-    expect(paths[2]).toBe(resolve("test2.ts"));
-    expect(paths[3]).toBe(resolve("test3.ts"));
+    const file1 = resolve("src/test1.ts");
+    expect(paths[0]).toBe(file1);
+    const file2 = resolve("test1.ts");
+    expect(paths[1]).toBe(file2);
+    const file3 = resolve("test2.ts");
+    expect(paths[2]).toBe(file3);
+    const file4 = resolve("test3.ts");
+    expect(paths[3]).toBe(file4);
+    expect(build.manifest.background.service_worker).toBe(file1);
+    const contentScripts = build.manifest.content_scripts;
+    if (!contentScripts) throw new Error("content_scripts is undefined");
+    const ts = contentScripts[0].ts;
+    if (!ts) throw new Error("ts is undefined");
+    expect(ts[0]).toBe(file2);
+    const ts2 = contentScripts[1].ts;
+    if (!ts2) throw new Error("ts2 is undefined");
+    expect(ts2[0]).toBe(file3);
+    expect(ts2[1]).toBe(file4);
   });
 });
 
@@ -774,6 +822,10 @@ describe("parseManifest", () => {
 });
 
 describe("writeManifest", () => {
+  beforeEach(() => {
+    spyOn(Bun, "write");
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -810,4 +862,31 @@ describe("writeManifest", () => {
     expect(content).toContain('"js": [');
     expect(content).toContain('"test1.js"');
   });
+
+  test("test with png in public folder", async () => {
+    build.public = resolve(cwd, "test/resources/public");
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      icons: {
+        16: "public/icons/16.png",
+      },
+    });
+    await build.copyPublic();
+
+    await build.writeManifest();
+
+    Object.values(build.fileToProperty)[0];
+    expect(Object.values(build.fileToProperty)[0]).toBe(
+      resolve(build.dist, "public/icons/16.png")
+    );
+    expect(Bun.write).toHaveBeenCalledTimes(2);
+    const content = await Bun.file(resolve(build.dist, "manifest.json")).text();
+    const manifest = JSON.parse(content);
+    expect(manifest.icons["16"]).toBe(
+      resolve(build.dist, "public/icons/16.png")
+    );
+  });
 });
+
+// TODO stil add tests for copyPublic and parse
