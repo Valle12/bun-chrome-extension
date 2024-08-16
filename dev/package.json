@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist && bunx tsc"
+    "build": "rm -rf dist && bunx tsc -p tsconfig-build.json"
   },
   "devDependencies": {
     "@types/bun": "latest",
