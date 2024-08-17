@@ -7,7 +7,7 @@ import {
   spyOn,
   test,
 } from "bun:test";
-import { readdir, rm } from "fs/promises";
+import { mkdir, readdir, rm } from "fs/promises";
 import { resolve, sep } from "path";
 import { Build } from "../build";
 import { defineManifest } from "../manifest.config";
@@ -920,11 +920,13 @@ describe("copyPublic", () => {
 
   test("test with empty public dir", async () => {
     build.public = resolve(cwd, "test/resources/empty");
+    await mkdir(build.public);
 
     await build.copyPublic();
 
     expect(readdir).toHaveBeenCalledTimes(1);
     expect(Bun.write).not.toHaveBeenCalled();
+    await rm(build.public, { recursive: true });
   });
 
   test("test with file in public folder", async () => {
@@ -963,6 +965,7 @@ describe("parse", () => {
 
   test("test with manifest, but no public folder", async () => {
     build.public = resolve(cwd, "test/resources/empty");
+    await mkdir(build.public);
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -985,6 +988,7 @@ describe("parse", () => {
     const manifest = await Bun.file(
       resolve(build.dist, "manifest.json")
     ).text();
+    await rm(build.public, { recursive: true });
   });
 
   test("test with basic manifest and public folder", async () => {
