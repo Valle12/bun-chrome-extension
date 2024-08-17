@@ -7,7 +7,7 @@ import {
   spyOn,
   test,
 } from "bun:test";
-import { rm } from "fs/promises";
+import { readdir, rm } from "fs/promises";
 import { resolve, sep } from "path";
 import { Build } from "../build";
 import { defineManifest } from "../manifest.config";
@@ -17,7 +17,11 @@ let build: Build;
 const cwd = resolve(import.meta.dir, "..");
 
 beforeEach(async () => {
-  build = new Build({});
+  build = new Build({
+    manifest_version: 3,
+    name: "test",
+    version: "0.0.1",
+  });
   build.dist = resolve(cwd, "dist");
   await rm(build.dist, { recursive: true });
 });
@@ -53,7 +57,7 @@ describe("extractPaths", () => {
     expect(paths.length).toBe(1);
     const file = resolve("test1.ts");
     expect(paths[0]).toBe(file);
-    expect(build.manifest.background.service_worker).toBe(file);
+    expect(build.manifest.background?.service_worker).toBe(file);
   });
 
   test("test with content_scripts info", () => {
@@ -106,7 +110,7 @@ describe("extractPaths", () => {
     expect(paths[0]).toBe(file1);
     const file2 = resolve("test2.ts");
     expect(paths[1]).toBe(file2);
-    expect(build.manifest.background.service_worker).toBe(file1);
+    expect(build.manifest.background?.service_worker).toBe(file1);
     const contentScripts = build.manifest.content_scripts;
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
@@ -208,7 +212,7 @@ describe("extractPaths", () => {
     expect(paths[2]).toBe(file3);
     const file4 = resolve("test3.ts");
     expect(paths[3]).toBe(file4);
-    expect(build.manifest.background.service_worker).toBe(file1);
+    expect(build.manifest.background?.service_worker).toBe(file1);
     const contentScripts = build.manifest.content_scripts;
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
@@ -476,7 +480,7 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Array.prototype.shift).toHaveBeenCalledTimes(1);
-    expect(build.manifest.background.service_worker).toBe(
+    expect(build.manifest.background?.service_worker).toBe(
       resolve(build.dist, "test1.js")
     );
   });
@@ -812,10 +816,16 @@ describe("parseManifest", () => {
       "dist" + sep + "optionsUI-"
     );
 
+    if (!build.manifest.action?.default_popup)
+      throw new Error("default_popup is undefined");
     const popup = await Bun.file(build.manifest.action?.default_popup).text();
     expect(popup).toContain(resolve(build.dist, "test3.js"));
+    if (!build.manifest.options_page)
+      throw new Error("options_page is undefined");
     const optionsPage = await Bun.file(build.manifest.options_page).text();
     expect(optionsPage).toContain(resolve(build.dist, "test4.js"));
+    if (!build.manifest.options_ui?.page)
+      throw new Error("options_ui.page is undefined");
     const optionsUI = await Bun.file(build.manifest.options_ui?.page).text();
     expect(optionsUI).toContain(resolve(build.dist, "src/test5.js"));
   });
@@ -886,6 +896,111 @@ describe("writeManifest", () => {
     expect(manifest.icons["16"]).toBe(
       resolve(build.dist, "public/icons/16.png")
     );
+  });
+});
+
+describe("copyPublic", () => {
+  beforeEach(async () => {
+    build.public = resolve(cwd, "test/resources/public");
+    spyOn(Bun, "write");
+    spyOn(await import("fs/promises"), "readdir");
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("test with no public dir", async () => {
+    build.public = resolve(cwd, "public");
+
+    await build.copyPublic();
+
+    expect(readdir).not.toHaveBeenCalled();
+  });
+
+  test("test with empty public dir", async () => {
+    build.public = resolve(cwd, "test/resources/empty");
+
+    await build.copyPublic();
+
+    expect(readdir).toHaveBeenCalledTimes(1);
+    expect(Bun.write).not.toHaveBeenCalled();
+  });
+
+  test("test with file in public folder", async () => {
+    await build.copyPublic();
+
+    expect(readdir).toHaveBeenCalledTimes(1);
+    expect(Bun.write).toHaveBeenCalledTimes(1);
+    const files = await readdir(resolve(build.dist, "public"), {
+      recursive: true,
+    });
+    expect(files.length).toBe(2); // icons also counts
+  });
+});
+
+describe("parse", () => {
+  beforeEach(() => {
+    spyOn(build, "parseManifest");
+    spyOn(build, "copyPublic");
+    spyOn(build, "writeManifest");
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("test with no additional config", async () => {
+    build.public = resolve(cwd, "public");
+
+    await build.parse();
+
+    expect(build.parseManifest).toHaveBeenCalledTimes(1);
+    expect(build.copyPublic).toHaveBeenCalledTimes(1);
+    expect(build.writeManifest).toHaveBeenCalledTimes(1);
+    expect(build.fileToProperty).toBeEmpty();
+  });
+
+  test("test with manifest, but no public folder", async () => {
+    build.public = resolve(cwd, "test/resources/empty");
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      background: {
+        service_worker: resolve(cwd, "test/resources/test1.ts"),
+      },
+    });
+
+    await build.parse();
+
+    expect(build.parseManifest).toHaveBeenCalledTimes(1);
+    expect(build.copyPublic).toHaveBeenCalledTimes(1);
+    expect(build.writeManifest).toHaveBeenCalledTimes(1);
+    expect(build.fileToProperty).toEqual({
+      [resolve(cwd, "test/resources/test1.ts")]: resolve(
+        build.dist,
+        "test1.js"
+      ),
+    });
+    const manifest = await Bun.file(
+      resolve(build.dist, "manifest.json")
+    ).text();
+  });
+
+  test("test with basic manifest and public folder", async () => {
+    build.public = resolve(cwd, "test/resources/public");
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+    });
+
+    await build.parse();
+
+    expect(build.parseManifest).toHaveBeenCalledTimes(1);
+    expect(build.copyPublic).toHaveBeenCalledTimes(1);
+    expect(build.writeManifest).toHaveBeenCalledTimes(1);
+    const files = await readdir(build.dist, { recursive: true });
+    expect(files.length).toBe(4);
   });
 });
 

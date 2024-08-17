@@ -1,7 +1,7 @@
 import { exists, readdir } from "fs/promises";
 import { Parser } from "htmlparser2";
 import { dirname, extname, relative, resolve } from "path";
-import { Attributes, FullManifest, HTMLType, Properties } from "./types";
+import type { Attributes, FullManifest, HTMLType, Properties } from "./types";
 
 export class Build {
   dist = resolve(process.cwd(), "dist");
@@ -14,9 +14,9 @@ export class Build {
   }
 
   async parse() {
-    this.parseManifest();
-    this.copyPublic();
-    this.writeManifest();
+    await this.parseManifest();
+    await this.copyPublic();
+    await this.writeManifest();
   }
 
   async parseManifest() {
@@ -197,6 +197,7 @@ export class Build {
   }
 
   async copyPublic() {
+    if (!(await exists(this.public))) return;
     const files = await readdir(this.public, {
       recursive: true,
       withFileTypes: true,
@@ -212,22 +213,9 @@ export class Build {
     }
   }
 
-  private async resolvePath(obj: any) {
-    for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === "object") {
-        await this.resolvePath(value);
-      } else if (typeof value === "string" && extname(value) !== "") {
-        const file = resolve(this.public, "..", value);
-        const existsFile = await exists(file);
-        if (!existsFile) continue;
-        obj[key] = file;
-      }
-    }
-  }
-
   async writeManifest() {
     const file = resolve(this.dist, "manifest.json");
-    await this.resolvePath(this.manifest);
+    await this.resolvePathsInManifest(this.manifest);
     let content = JSON.stringify(this.manifest, null, 2).replace(
       `"ts"`,
       `"js"`
@@ -268,7 +256,6 @@ export class Build {
     return paths;
   }
 
-  // TODO check for new logic with absolute path replacement
   async extractPathsFromHTML(properties: Properties) {
     const htmlFiles: HTMLType[] = [];
 
@@ -303,6 +290,19 @@ export class Build {
     }
 
     return htmlFiles;
+  }
+
+  private async resolvePathsInManifest(obj: any) {
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === "object") {
+        await this.resolvePathsInManifest(value);
+      } else if (typeof value === "string" && extname(value) !== "") {
+        const file = resolve(this.public, "..", value);
+        const existsFile = await exists(file);
+        if (!existsFile) continue;
+        obj[key] = file;
+      }
+    }
   }
 
   private async parseHTML(type: HTMLType) {
