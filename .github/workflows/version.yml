@@ -1,0 +1,32 @@
+name: Check package.json version
+
+on:
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+
+      - name: Check for changes in dev directory
+        id: changes
+        run: |
+          if git diff --quiet HEAD^ HEAD -- dev/; then
+            echo "No changes in dev directory"
+            echo "changed=false" >> $GITHUB_ENV
+          else
+            echo "Changes detected in dev directory"
+            echo "changed=true" >> $GITHUB_ENV
+          fi
+
+      - name: Check if package.json version is updated
+        if: env.changed == 'true'
+        uses: EndBug/version-check@v2
+        with:
+          diff-search: true
+          file-name: ./dev/package.json
+        id: check
