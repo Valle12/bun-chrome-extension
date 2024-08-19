@@ -1,6 +1,6 @@
 import { exists, readdir } from "fs/promises";
 import { Parser } from "htmlparser2";
-import { dirname, extname, relative, resolve } from "path";
+import { dirname, extname, join, relative, resolve } from "path";
 import type { Attributes, FullManifest, HTMLType, Properties } from "./types";
 
 export class Build {
@@ -51,7 +51,11 @@ export class Build {
             file = build.path;
             this.fileToProperty[this.manifest.background.service_worker] = file;
           }
-          this.manifest.background.service_worker = file;
+          const relativeFilePath = relative(this.dist, file).replace(
+            /\\/g,
+            "/"
+          );
+          this.manifest.background.service_worker = relativeFilePath;
           properties["background.service_worker"] = false;
           continue;
         }
@@ -70,7 +74,11 @@ export class Build {
                 file = build.path;
                 this.fileToProperty[contentScript.ts[j]] = file;
               }
-              contentScript.ts[j] = file;
+              const relativeFilePath = relative(this.dist, file).replace(
+                /\\/g,
+                "/"
+              );
+              contentScript.ts[j] = relativeFilePath;
             }
           }
           properties["content_scripts.ts"] = false;
@@ -101,18 +109,27 @@ export class Build {
           for (let j = 0; j < scripts.length; j++) {
             const script = scripts[j];
             let resolvedScript: string;
+            let relativeFilePath: string;
             if (this.fileToProperty[resolvedScripts[j]]) {
-              resolvedScript = this.fileToProperty[resolvedScripts[j]];
+              relativeFilePath = this.fileToProperty[resolvedScripts[j]];
             } else {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              this.fileToProperty[resolvedScripts[j]] = resolvedScript;
+              relativeFilePath = relative(this.dist, resolvedScript).replace(
+                /\\/g,
+                "/"
+              );
+              this.fileToProperty[resolvedScripts[j]] = relativeFilePath;
             }
-            content = content.replace(script, resolvedScript);
+            content = content.replace(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          this.manifest.action.default_popup = file;
+          const relativeFilePath = relative(this.dist, file).replace(
+            /\\/g,
+            "/"
+          );
+          this.manifest.action.default_popup = relativeFilePath;
           properties["action.default_popup"] = false;
           continue;
         }
@@ -137,18 +154,27 @@ export class Build {
           for (let j = 0; j < scripts.length; j++) {
             const script = scripts[j];
             let resolvedScript: string;
+            let relativeFilePath: string;
             if (this.fileToProperty[resolvedScripts[j]]) {
-              resolvedScript = this.fileToProperty[resolvedScripts[j]];
+              relativeFilePath = this.fileToProperty[resolvedScripts[j]];
             } else {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              this.fileToProperty[resolvedScripts[j]] = resolvedScript;
+              relativeFilePath = relative(this.dist, resolvedScript).replace(
+                /\\/g,
+                "/"
+              );
+              this.fileToProperty[resolvedScripts[j]] = relativeFilePath;
             }
-            content = content.replace(script, resolvedScript);
+            content = content.replace(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          this.manifest.options_page = file;
+          const relativeFilePath = relative(this.dist, file).replace(
+            /\\/g,
+            "/"
+          );
+          this.manifest.options_page = relativeFilePath;
           properties["options_page"] = false;
           continue;
         }
@@ -177,18 +203,27 @@ export class Build {
           for (let j = 0; j < scripts.length; j++) {
             const script = scripts[j];
             let resolvedScript: string;
+            let relativeFilePath: string;
             if (this.fileToProperty[resolvedScripts[j]]) {
-              resolvedScript = this.fileToProperty[resolvedScripts[j]];
+              relativeFilePath = this.fileToProperty[resolvedScripts[j]];
             } else {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              this.fileToProperty[resolvedScripts[j]] = resolvedScript;
+              relativeFilePath = relative(this.dist, resolvedScript).replace(
+                /\\/g,
+                "/"
+              );
+              this.fileToProperty[resolvedScripts[j]] = relativeFilePath;
             }
-            content = content.replace(script, resolvedScript);
+            content = content.replace(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          this.manifest.options_ui.page = file;
+          const relativeFilePath = relative(this.dist, file).replace(
+            /\\/g,
+            "/"
+          );
+          this.manifest.options_ui.page = relativeFilePath;
           properties["options_ui.page"] = false;
           continue;
         }
@@ -207,8 +242,9 @@ export class Build {
       const filePath = resolve(this.public, file.parentPath, file.name);
       const source = Bun.file(filePath);
       const relativeFilePath = relative(this.public, filePath);
-      const outFile = resolve(this.dist, "public", relativeFilePath);
-      this.fileToProperty[filePath] = outFile;
+      const joinedFile = join("public", relativeFilePath);
+      const outFile = resolve(this.dist, joinedFile);
+      this.fileToProperty[filePath] = joinedFile;
       await Bun.write(outFile, source);
     }
   }
@@ -223,7 +259,7 @@ export class Build {
 
     // TODO need to check if chrome can read the file in this format
     for (const key in this.fileToProperty) {
-      const value = this.fileToProperty[key].replace(/\\/g, "\\\\");
+      const value = this.fileToProperty[key].replace(/\\/g, "/");
       const resolvedKey = resolve(key).replace(/\\/g, "\\\\");
       content = content.replace(resolvedKey, value);
     }
