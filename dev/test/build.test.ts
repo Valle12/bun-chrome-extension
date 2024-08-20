@@ -11,7 +11,7 @@ import { mkdir, readdir, rm } from "fs/promises";
 import { normalize, resolve } from "path";
 import { Build } from "../build";
 import { defineManifest } from "../manifest.config";
-import type { Properties } from "../types";
+import type { FullManifest, Properties } from "../types";
 
 let build: Build;
 const cwd = resolve(import.meta.dir, "..");
@@ -28,7 +28,7 @@ beforeEach(async () => {
 
 describe("extractPaths", () => {
   test("test with no additional config", () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -36,12 +36,12 @@ describe("extractPaths", () => {
 
     const paths = build.extractPaths(properties);
 
-    expect(properties).toEqual({});
-    expect(paths.length).toBe(0);
+    expect(properties).toBeEmpty();
+    expect(paths).toBeEmpty();
   });
 
   test("test with background info", () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -52,8 +52,8 @@ describe("extractPaths", () => {
 
     const paths = build.extractPaths(properties);
 
-    expect(properties["background.service_worker"]).toBeTrue();
-    expect(properties["content_scripts.ts"]).toBeUndefined();
+    expect(properties.get("background.service_worker")).toBeTrue();
+    expect(properties.get("content_scripts.ts")).toBeUndefined();
     expect(paths.length).toBe(1);
     const file = resolve("test1.ts");
     expect(paths[0]).toBe(file);
@@ -61,7 +61,7 @@ describe("extractPaths", () => {
   });
 
   test("test with content_scripts info", () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -74,8 +74,8 @@ describe("extractPaths", () => {
 
     const paths = build.extractPaths(properties);
 
-    expect(properties["background.service_worker"]).toBeUndefined();
-    expect(properties["content_scripts.ts"]).toBeTrue();
+    expect(properties.get("background.service_worker")).toBeUndefined();
+    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(1);
     const file = resolve("test1.ts");
     expect(paths[0]).toBe(file);
@@ -87,7 +87,7 @@ describe("extractPaths", () => {
   });
 
   test("test with background and content_scripts info", () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -103,8 +103,8 @@ describe("extractPaths", () => {
 
     const paths = build.extractPaths(properties);
 
-    expect(properties["background.service_worker"]).toBeTrue();
-    expect(properties["content_scripts.ts"]).toBeTrue();
+    expect(properties.get("background.service_worker")).toBeTrue();
+    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(2);
     const file1 = resolve("src/test1.ts");
     expect(paths[0]).toBe(file1);
@@ -119,7 +119,7 @@ describe("extractPaths", () => {
   });
 
   test("test with multiple ts files", () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -132,8 +132,8 @@ describe("extractPaths", () => {
 
     const paths = build.extractPaths(properties);
 
-    expect(properties["background.service_worker"]).toBeUndefined();
-    expect(properties["content_scripts.ts"]).toBeTrue();
+    expect(properties.get("background.service_worker")).toBeUndefined();
+    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(2);
     const file1 = resolve("test1.ts");
     expect(paths[0]).toBe(file1);
@@ -148,7 +148,7 @@ describe("extractPaths", () => {
   });
 
   test("test with multiple content_scripts", () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -164,8 +164,8 @@ describe("extractPaths", () => {
 
     const paths = build.extractPaths(properties);
 
-    expect(properties["background.service_worker"]).toBeUndefined();
-    expect(properties["content_scripts.ts"]).toBeTrue();
+    expect(properties.get("background.service_worker")).toBeUndefined();
+    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(2);
     const file1 = resolve("test1.ts");
     expect(paths[0]).toBe(file1);
@@ -182,7 +182,7 @@ describe("extractPaths", () => {
   });
 
   test("test with everything", () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -201,8 +201,8 @@ describe("extractPaths", () => {
 
     const paths = build.extractPaths(properties);
 
-    expect(properties["background.service_worker"]).toBeTrue();
-    expect(properties["content_scripts.ts"]).toBeTrue();
+    expect(properties.get("background.service_worker")).toBeTrue();
+    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(4);
     const file1 = resolve("src/test1.ts");
     expect(paths[0]).toBe(file1);
@@ -227,7 +227,7 @@ describe("extractPaths", () => {
 
 describe("extractPathsFromHTML", () => {
   test("test with no additional config", async () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -235,12 +235,12 @@ describe("extractPathsFromHTML", () => {
 
     const htmlTypes = await build.extractPathsFromHTML(properties);
 
-    expect(properties).toEqual({});
-    expect(htmlTypes.length).toBe(0);
+    expect(properties).toBeEmpty();
+    expect(htmlTypes).toBeEmpty();
   });
 
   test("test with popup info", async () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -251,7 +251,7 @@ describe("extractPathsFromHTML", () => {
 
     const htmlTypes = await build.extractPathsFromHTML(properties);
 
-    expect(properties["action.default_popup"]).toBeTrue();
+    expect(properties.get("action.default_popup")).toBeTrue();
     expect(htmlTypes.length).toBe(1);
     expect(htmlTypes[0].property).toBe("action.default_popup");
     expect(htmlTypes[0].scripts?.length).toBe(1);
@@ -266,7 +266,7 @@ describe("extractPathsFromHTML", () => {
   });
 
   test("test with options_page info", async () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -275,7 +275,7 @@ describe("extractPathsFromHTML", () => {
 
     const htmlTypes = await build.extractPathsFromHTML(properties);
 
-    expect(properties["options_page"]).toBeTrue();
+    expect(properties.get("options_page")).toBeTrue();
     expect(htmlTypes.length).toBe(1);
     expect(htmlTypes[0].property).toBe("options_page");
     expect(htmlTypes[0].scripts?.length).toBe(1);
@@ -290,7 +290,7 @@ describe("extractPathsFromHTML", () => {
   });
 
   test("test with options_ui info", async () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -301,7 +301,7 @@ describe("extractPathsFromHTML", () => {
 
     const htmlTypes = await build.extractPathsFromHTML(properties);
 
-    expect(properties["options_ui.page"]).toBeTrue();
+    expect(properties.get("options_ui.page")).toBeTrue();
     expect(htmlTypes.length).toBe(1);
     expect(htmlTypes[0].property).toBe("options_ui.page");
     expect(htmlTypes[0].scripts?.length).toBe(1);
@@ -316,7 +316,7 @@ describe("extractPathsFromHTML", () => {
   });
 
   test("test with everything", async () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -333,7 +333,7 @@ describe("extractPathsFromHTML", () => {
 
     expect(htmlTypes.length).toBe(3);
 
-    expect(properties["action.default_popup"]).toBeTrue();
+    expect(properties.get("action.default_popup")).toBeTrue();
     expect(htmlTypes[0].property).toBe("action.default_popup");
     expect(htmlTypes[0].scripts?.length).toBe(1);
     if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
@@ -345,7 +345,7 @@ describe("extractPathsFromHTML", () => {
       resolve(cwd, "test/resources/test3.ts")
     );
 
-    expect(properties["options_page"]).toBeTrue();
+    expect(properties.get("options_page")).toBeTrue();
     expect(htmlTypes[1].property).toBe("options_page");
     expect(htmlTypes[1].scripts?.length).toBe(1);
     if (!htmlTypes[1].scripts) throw new Error("scripts is undefined");
@@ -357,7 +357,7 @@ describe("extractPathsFromHTML", () => {
       resolve(cwd, "test/resources/test4.ts")
     );
 
-    expect(properties["options_ui.page"]).toBeTrue();
+    expect(properties.get("options_ui.page")).toBeTrue();
     expect(htmlTypes[2].property).toBe("options_ui.page");
     expect(htmlTypes[2].scripts?.length).toBe(1);
     if (!htmlTypes[2].scripts) throw new Error("scripts is undefined");
@@ -371,7 +371,7 @@ describe("extractPathsFromHTML", () => {
   });
 
   test("test with multiple scripts in html", async () => {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -382,7 +382,7 @@ describe("extractPathsFromHTML", () => {
 
     const htmlTypes = await build.extractPathsFromHTML(properties);
 
-    expect(properties["action.default_popup"]).toBeTrue();
+    expect(properties.get("action.default_popup")).toBeTrue();
     expect(htmlTypes.length).toBe(1);
     expect(htmlTypes[0].property).toBe("action.default_popup");
     expect(htmlTypes[0].scripts?.length).toBe(3);
@@ -415,7 +415,7 @@ describe("extractPathsFromHTML", () => {
     const tmp = resolve(cwd, "test/resources/src/tmp.html");
     await Bun.write(tmp, content);
 
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -426,7 +426,7 @@ describe("extractPathsFromHTML", () => {
 
     const htmlTypes = await build.extractPathsFromHTML(properties);
 
-    expect(properties["action.default_popup"]).toBeTrue();
+    expect(properties.get("action.default_popup")).toBeTrue();
     expect(htmlTypes.length).toBe(1);
     expect(htmlTypes[0].property).toBe("action.default_popup");
     expect(htmlTypes[0].scripts?.length).toBe(1);
@@ -866,8 +866,7 @@ describe("writeManifest", () => {
 
     await build.writeManifest();
 
-    Object.values(build.fileToProperty)[0];
-    expect(Object.values(build.fileToProperty)[0]).toBe(
+    expect(build.fileToProperty.values().next().value).toBe(
       normalize("public/icons/16.png")
     );
     expect(Bun.write).toHaveBeenCalledTimes(2);
@@ -957,15 +956,15 @@ describe("parse", () => {
     expect(build.parseManifest).toHaveBeenCalledTimes(1);
     expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    expect(build.fileToProperty).toEqual({
-      [resolve(cwd, "test/resources/test1.ts")]: resolve(
-        build.dist,
-        "test1.js"
-      ),
-    });
-    const manifest = await Bun.file(
+    expect(build.fileToProperty.size).toBe(1);
+    expect(
+      build.fileToProperty.get(resolve(cwd, "test/resources/test1.ts"))
+    ).toBe(resolve(build.dist, "test1.js"));
+    const manifestJson = await Bun.file(
       resolve(build.dist, "manifest.json")
     ).text();
+    const manifest: FullManifest = JSON.parse(manifestJson);
+    expect(manifest.background?.service_worker).toBe("test1.js");
     await rm(build.public, { recursive: true });
   });
 
