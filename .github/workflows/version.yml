@@ -15,6 +15,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
 
+      - name: Check for changes in dev folder
+        id: changes
+        run: |
+          if git diff --quiet HEAD^ HEAD -- dev; then
+            echo "no changes"
+          else
+            echo "changes"
+          fi
+
       - name: Get package.json version
         id: check
         uses: EndBug/version-check@v2.1.4
