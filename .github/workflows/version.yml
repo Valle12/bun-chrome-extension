@@ -15,12 +15,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
 
-      - name: Check if version has been updated
+      - name: Get package.json version
         id: check
         uses: EndBug/version-check@v2.1.4
         with:
           diff-search: true
           file-name: ./dev/package.json
 
-      - name: Log out result
-        run: echo "${{ steps.check.outputs.changed }}"
+      - name: Check if package.json version changed
+        if: {{ steps.check.outputs.changed }} != true
+        run: echo "Version in package.json has not changed"
+        run: exit 1
