@@ -21,3 +21,6 @@ jobs:
         with:
           diff-search: true
           file-name: ./dev/package.json
+
+      - name: Log out result
+        run: echo "${{ steps.check.outputs.changed }}"
