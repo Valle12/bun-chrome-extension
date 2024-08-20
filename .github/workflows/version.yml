@@ -5,21 +5,6 @@ on:
     branches: ["master"]
 
 jobs:
-  check_dev_changes:
-    runs-on: ubuntu-latest
-    outputs:
-      has_dev_changes: ${{ steps.check-changes.outputs.has_changes }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check for changes in dev folder
-        id: check-changes
-        run: |
-          if [[ $(git diff --name-only origin/master...HEAD | grep -E '^dev/') ]]; then
-            echo ""
-          else
-            echo "::set-output name=has_changes::false"
-          fi
-
   check:
     runs-on: ubuntu-latest
 
