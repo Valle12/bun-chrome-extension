@@ -9,24 +9,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Check for changes in dev directory
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+
+      - name: Get updates in dev folder
         id: changes
         run: |
-          if git diff --quiet HEAD^ HEAD -- dev/; then
-            echo "No changes in dev directory"
-            echo "changed=false" >> $GITHUB_ENV
+          if [[ $(git diff --name-only origin/master...HEAD | grep dev) ]]; then
+            echo "updated=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Changes detected in dev directory"
-            echo "changed=true" >> $GITHUB_ENV
+            echo "updated=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check if package.json version is updated
-        if: env.changed == 'true'
-        uses: EndBug/version-check@v2
+      - name: Get package.json version
+        id: check
+        if: steps.changes.outputs.updated == 'true'
+        uses: EndBug/version-check@v2.1.4
         with:
           diff-search: true
-          file-name: ./dev/package.json
-        id: check
+          file-name: dev/package.json
+
+      - name: Check if package.json version changed
+        if: steps.check.outputs.changed == 'false'
+        run: |
+          echo "Version in package.json has not changed"
+          exit 1
