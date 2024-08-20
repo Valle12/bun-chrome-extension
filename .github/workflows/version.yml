@@ -28,9 +28,7 @@ jobs:
 
       - name: Check if dev folder updated
         if: steps.changes.outputs.updated == 'false'
-        run: |
-          echo "No changes in dev folder"
-          exit 0
+        run: exit 0
 
       - name: Get package.json version
         id: check
