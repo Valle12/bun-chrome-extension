@@ -23,6 +23,6 @@ jobs:
           file-name: ./dev/package.json
 
       - name: Check if package.json version changed
-        if: {{ steps.check.outputs.changed }} != true
+        if: {{ ! steps.check.outputs.changed }}
         run: echo "Version in package.json has not changed"
         run: exit 1
