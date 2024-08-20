@@ -1,6 +1,3 @@
-type Prettify<T> = {
-  [K in keyof T]: T[K];
-} & {};
 export type OnlyKnown<T> = {
   [K in keyof T as string extends K
     ? never
@@ -36,10 +33,9 @@ export type Attributes = {
   src: string;
 };
 
-export type Properties = {
-  "background.service_worker"?: boolean;
-  "content_scripts.ts"?: boolean;
-  "action.default_popup"?: boolean;
-  options_page?: boolean;
-  "options_ui.page"?: boolean;
-};
+export type Properties =
+  | "background.service_worker"
+  | "content_scripts.ts"
+  | "action.default_popup"
+  | "options_page"
+  | "options_ui.page";

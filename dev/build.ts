@@ -7,7 +7,7 @@ export class Build {
   dist = resolve(process.cwd(), "dist");
   public = resolve(process.cwd(), "public");
   manifest: FullManifest;
-  fileToProperty: { [key: string]: string } = {};
+  fileToProperty: Map<string, string> = new Map();
 
   constructor(manifest: FullManifest) {
     this.manifest = manifest;
@@ -20,7 +20,7 @@ export class Build {
   }
 
   async parseManifest() {
-    const properties: Properties = {};
+    const properties: Map<Properties, boolean> = new Map();
     const entrypoints = this.extractPaths(properties);
     const htmlTypes = await this.extractPathsFromHTML(properties);
     for (const type of htmlTypes) {
@@ -39,40 +39,47 @@ export class Build {
       const entrypointsLength = entrypoints.length;
       for (let i = 0; i < entrypointsLength; i++) {
         if (
-          properties["background.service_worker"] &&
+          properties.get("background.service_worker") &&
           this.manifest.background
         ) {
           let file: string;
-          if (this.fileToProperty[this.manifest.background.service_worker]) {
-            file = this.fileToProperty[this.manifest.background.service_worker];
+          const reference = this.manifest.background.service_worker;
+          const property = this.fileToProperty.get(reference);
+          if (property) {
+            file = property;
           } else {
             const build = result.outputs.shift();
             if (!build) break;
             file = build.path;
-            this.fileToProperty[this.manifest.background.service_worker] = file;
+            this.fileToProperty.set(reference, file);
           }
           const relativeFilePath = relative(this.dist, file).replace(
             /\\/g,
             "/"
           );
           this.manifest.background.service_worker = relativeFilePath;
-          properties["background.service_worker"] = false;
+          properties.set("background.service_worker", false);
           continue;
         }
 
-        if (properties["content_scripts.ts"] && this.manifest.content_scripts) {
+        if (
+          properties.get("content_scripts.ts") &&
+          this.manifest.content_scripts
+        ) {
           const contentScripts = this.manifest.content_scripts;
           for (const contentScript of contentScripts) {
             if (!contentScript.ts) continue;
             for (let j = 0; j < contentScript.ts.length; j++) {
               let file: string;
-              if (this.fileToProperty[contentScript.ts[j]]) {
-                file = this.fileToProperty[contentScript.ts[j]];
+              const reference = contentScript.ts[j];
+              const property = this.fileToProperty.get(reference);
+              if (property) {
+                file = property;
               } else {
                 const build = result.outputs.shift();
                 if (!build) break;
                 file = build.path;
-                this.fileToProperty[contentScript.ts[j]] = file;
+                this.fileToProperty.set(reference, file);
               }
               const relativeFilePath = relative(this.dist, file).replace(
                 /\\/g,
@@ -81,24 +88,26 @@ export class Build {
               contentScript.ts[j] = relativeFilePath;
             }
           }
-          properties["content_scripts.ts"] = false;
+          properties.set("content_scripts.ts", false);
           continue;
         }
 
         if (
-          properties["action.default_popup"] &&
+          properties.get("action.default_popup") &&
           this.manifest.action &&
           this.manifest.action.default_popup
         ) {
           let file: string;
+          const reference = this.manifest.action.default_popup;
+          const property = this.fileToProperty.get(reference);
           const build = result.outputs.shift();
           if (!build) break;
-          if (this.fileToProperty[this.manifest.action.default_popup]) {
-            file = this.fileToProperty[this.manifest.action.default_popup];
+          if (property) {
+            file = property;
           } else {
             const newHTML = await import(build.path);
             file = resolve(dirname(build.path), newHTML.default);
-            this.fileToProperty[this.manifest.action.default_popup] = file;
+            this.fileToProperty.set(reference, file);
           }
           let content = await Bun.file(file).text();
           const type = htmlTypes.shift();
@@ -108,10 +117,11 @@ export class Build {
           if (!scripts || !resolvedScripts) break;
           for (let j = 0; j < scripts.length; j++) {
             const script = scripts[j];
+            const property = this.fileToProperty.get(resolvedScripts[j]);
             let resolvedScript: string;
             let relativeFilePath: string;
-            if (this.fileToProperty[resolvedScripts[j]]) {
-              relativeFilePath = this.fileToProperty[resolvedScripts[j]];
+            if (property) {
+              relativeFilePath = property;
             } else {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
@@ -120,7 +130,7 @@ export class Build {
                 /\\/g,
                 "/"
               );
-              this.fileToProperty[resolvedScripts[j]] = relativeFilePath;
+              this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
             content = content.replace(script, relativeFilePath);
             await Bun.write(file, content);
@@ -130,20 +140,22 @@ export class Build {
             "/"
           );
           this.manifest.action.default_popup = relativeFilePath;
-          properties["action.default_popup"] = false;
+          properties.set("action.default_popup", false);
           continue;
         }
 
-        if (properties["options_page"] && this.manifest.options_page) {
+        if (properties.get("options_page") && this.manifest.options_page) {
           let file: string;
+          const reference = this.manifest.options_page;
+          const property = this.fileToProperty.get(reference);
           const build = result.outputs.shift();
           if (!build) break;
-          if (this.fileToProperty[this.manifest.options_page]) {
-            file = this.fileToProperty[this.manifest.options_page];
+          if (property) {
+            file = property;
           } else {
             const newHTML = await import(build.path);
             file = resolve(dirname(build.path), newHTML.default);
-            this.fileToProperty[this.manifest.options_page] = file;
+            this.fileToProperty.set(reference, file);
           }
           let content = await Bun.file(file).text();
           const type = htmlTypes.shift();
@@ -153,10 +165,11 @@ export class Build {
           if (!scripts || !resolvedScripts) break;
           for (let j = 0; j < scripts.length; j++) {
             const script = scripts[j];
+            const property = this.fileToProperty.get(resolvedScripts[j]);
             let resolvedScript: string;
             let relativeFilePath: string;
-            if (this.fileToProperty[resolvedScripts[j]]) {
-              relativeFilePath = this.fileToProperty[resolvedScripts[j]];
+            if (property) {
+              relativeFilePath = property;
             } else {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
@@ -165,7 +178,7 @@ export class Build {
                 /\\/g,
                 "/"
               );
-              this.fileToProperty[resolvedScripts[j]] = relativeFilePath;
+              this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
             content = content.replace(script, relativeFilePath);
             await Bun.write(file, content);
@@ -175,24 +188,26 @@ export class Build {
             "/"
           );
           this.manifest.options_page = relativeFilePath;
-          properties["options_page"] = false;
+          properties.set("options_page", false);
           continue;
         }
 
         if (
-          properties["options_ui.page"] &&
+          properties.get("options_ui.page") &&
           this.manifest.options_ui &&
           this.manifest.options_ui.page
         ) {
           let file: string;
+          const reference = this.manifest.options_ui.page;
+          const property = this.fileToProperty.get(reference);
           const build = result.outputs.shift();
           if (!build) break;
-          if (this.fileToProperty[this.manifest.options_ui.page]) {
-            file = this.fileToProperty[this.manifest.options_ui.page];
+          if (property) {
+            file = property;
           } else {
             const newHTML = await import(build.path);
             file = resolve(dirname(build.path), newHTML.default);
-            this.fileToProperty[this.manifest.options_ui.page] = file;
+            this.fileToProperty.set(reference, file);
           }
           let content = await Bun.file(file).text();
           const type = htmlTypes.shift();
@@ -202,10 +217,11 @@ export class Build {
           if (!scripts || !resolvedScripts) break;
           for (let j = 0; j < scripts.length; j++) {
             const script = scripts[j];
+            const property = this.fileToProperty.get(resolvedScripts[j]);
             let resolvedScript: string;
             let relativeFilePath: string;
-            if (this.fileToProperty[resolvedScripts[j]]) {
-              relativeFilePath = this.fileToProperty[resolvedScripts[j]];
+            if (property) {
+              relativeFilePath = property;
             } else {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
@@ -214,7 +230,7 @@ export class Build {
                 /\\/g,
                 "/"
               );
-              this.fileToProperty[resolvedScripts[j]] = relativeFilePath;
+              this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
             content = content.replace(script, relativeFilePath);
             await Bun.write(file, content);
@@ -224,7 +240,7 @@ export class Build {
             "/"
           );
           this.manifest.options_ui.page = relativeFilePath;
-          properties["options_ui.page"] = false;
+          properties.set("options_ui.page", false);
           continue;
         }
       }
@@ -244,7 +260,7 @@ export class Build {
       const relativeFilePath = relative(this.public, filePath);
       const joinedFile = join("public", relativeFilePath);
       const outFile = resolve(this.dist, joinedFile);
-      this.fileToProperty[filePath] = joinedFile;
+      this.fileToProperty.set(filePath, joinedFile);
       await Bun.write(outFile, source);
     }
   }
@@ -257,24 +273,23 @@ export class Build {
       `"js"`
     );
 
-    // TODO need to check if chrome can read the file in this format
-    for (const key in this.fileToProperty) {
-      const value = this.fileToProperty[key].replace(/\\/g, "/");
-      const resolvedKey = resolve(key).replace(/\\/g, "\\\\");
-      content = content.replace(resolvedKey, value);
+    for (const [key, value] of this.fileToProperty) {
+      const replacedValue = value.replace(/\\/g, "/");
+      const replacedKey = key.replace(/\\/g, "\\\\");
+      content = content.replace(replacedKey, replacedValue);
     }
 
     await Bun.write(file, content);
   }
 
-  extractPaths(properties: Properties) {
+  extractPaths(properties: Map<Properties, boolean>) {
     const paths: string[] = [];
 
     if (this.manifest.background) {
       const file = resolve(this.manifest.background.service_worker);
       this.manifest.background.service_worker = file;
       paths.push(file);
-      properties["background.service_worker"] = true;
+      properties.set("background.service_worker", true);
     }
 
     if (this.manifest.content_scripts) {
@@ -286,13 +301,13 @@ export class Build {
           paths.push(file);
         }
       }
-      properties["content_scripts.ts"] = true;
+      properties.set("content_scripts.ts", true);
     }
 
     return paths;
   }
 
-  async extractPathsFromHTML(properties: Properties) {
+  async extractPathsFromHTML(properties: Map<Properties, boolean>) {
     const htmlFiles: HTMLType[] = [];
 
     if (this.manifest.action && this.manifest.action.default_popup) {
@@ -302,7 +317,7 @@ export class Build {
       };
       await this.parseHTML(type);
       htmlFiles.push(type);
-      properties["action.default_popup"] = true;
+      properties.set("action.default_popup", true);
     }
 
     if (this.manifest.options_page) {
@@ -312,7 +327,7 @@ export class Build {
       };
       await this.parseHTML(type);
       htmlFiles.push(type);
-      properties["options_page"] = true;
+      properties.set("options_page", true);
     }
 
     if (this.manifest.options_ui && this.manifest.options_ui.page) {
@@ -322,7 +337,7 @@ export class Build {
       };
       await this.parseHTML(type);
       htmlFiles.push(type);
-      properties["options_ui.page"] = true;
+      properties.set("options_ui.page", true);
     }
 
     return htmlFiles;
