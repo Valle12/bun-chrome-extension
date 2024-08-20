@@ -24,4 +24,6 @@ jobs:
 
       - name: Check if package.json version changed
         if: steps.check.outputs.changed == 'false'
-        run: echo "Version in package.json has not changed"
+        run: |
+          echo "Version in package.json has not changed"
+          exit 1
