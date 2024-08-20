@@ -26,12 +26,9 @@ jobs:
             echo "updated=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Check if dev folder updated
-        if: steps.changes.outputs.updated == 'false'
-        run: exit 0
-
       - name: Get package.json version
         id: check
+        if: steps.changes.outputs.updated == 'true'
         uses: EndBug/version-check@v2.1.4
         with:
           diff-search: true
