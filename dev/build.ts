@@ -53,7 +53,7 @@ export class Build {
             file = build.path;
             this.fileToProperty.set(reference, file);
           }
-          const relativeFilePath = relative(this.dist, file).replace(
+          const relativeFilePath = relative(this.dist, file).replaceAll(
             /\\/g,
             "/"
           );
@@ -81,7 +81,7 @@ export class Build {
                 file = build.path;
                 this.fileToProperty.set(reference, file);
               }
-              const relativeFilePath = relative(this.dist, file).replace(
+              const relativeFilePath = relative(this.dist, file).replaceAll(
                 /\\/g,
                 "/"
               );
@@ -126,16 +126,16 @@ export class Build {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              relativeFilePath = relative(this.dist, resolvedScript).replace(
+              relativeFilePath = relative(this.dist, resolvedScript).replaceAll(
                 /\\/g,
                 "/"
               );
               this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
-            content = content.replace(script, relativeFilePath);
+            content = content.replaceAll(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          const relativeFilePath = relative(this.dist, file).replace(
+          const relativeFilePath = relative(this.dist, file).replaceAll(
             /\\/g,
             "/"
           );
@@ -174,16 +174,16 @@ export class Build {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              relativeFilePath = relative(this.dist, resolvedScript).replace(
+              relativeFilePath = relative(this.dist, resolvedScript).replaceAll(
                 /\\/g,
                 "/"
               );
               this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
-            content = content.replace(script, relativeFilePath);
+            content = content.replaceAll(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          const relativeFilePath = relative(this.dist, file).replace(
+          const relativeFilePath = relative(this.dist, file).replaceAll(
             /\\/g,
             "/"
           );
@@ -226,16 +226,16 @@ export class Build {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              relativeFilePath = relative(this.dist, resolvedScript).replace(
+              relativeFilePath = relative(this.dist, resolvedScript).replaceAll(
                 /\\/g,
                 "/"
               );
               this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
-            content = content.replace(script, relativeFilePath);
+            content = content.replaceAll(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          const relativeFilePath = relative(this.dist, file).replace(
+          const relativeFilePath = relative(this.dist, file).replaceAll(
             /\\/g,
             "/"
           );
@@ -268,15 +268,15 @@ export class Build {
   async writeManifest() {
     const file = resolve(this.dist, "manifest.json");
     await this.resolvePathsInManifest(this.manifest);
-    let content = JSON.stringify(this.manifest, null, 2).replace(
+    let content = JSON.stringify(this.manifest, null, 2).replaceAll(
       `"ts"`,
       `"js"`
     );
 
     for (const [key, value] of this.fileToProperty) {
-      const replacedValue = value.replace(/\\/g, "/");
-      const replacedKey = key.replace(/\\/g, "\\\\");
-      content = content.replace(replacedKey, replacedValue);
+      const replacedValue = value.replaceAll(/\\/g, "/");
+      const replacedKey = key.replaceAll(/\\/g, "\\\\");
+      content = content.replaceAll(replacedKey, replacedValue);
     }
 
     await Bun.write(file, content);
