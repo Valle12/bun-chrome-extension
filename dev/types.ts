@@ -1,3 +1,5 @@
+import type { BuildConfig } from "bun";
+
 export type OnlyKnown<T> = {
   [K in keyof T as string extends K
     ? never
@@ -47,6 +49,13 @@ export type FullManifest = OmitManifest & {
 
 export type Manifest = Omit<FullManifest, "manifest_version">;
 
+export function defineManifest(manifest: Manifest): FullManifest {
+  return {
+    manifest_version: 3,
+    ...manifest,
+  };
+}
+
 // Build types
 export type HTMLType = {
   originalURL: string;
@@ -66,3 +75,27 @@ export type Properties =
   | "action.default_popup"
   | "options_page"
   | "options_ui.page";
+
+// BCE Config
+export type BCEConfig = Omit<
+  BuildConfig,
+  | "entrypoints"
+  | "target"
+  | "format"
+  | "splitting"
+  | "plugins"
+  | "external"
+  | "packages"
+  | "naming"
+  | "root"
+  | "publicPath"
+  | "define"
+  | "loader"
+  | "conditions"
+> & {
+  public?: string;
+};
+
+export function defineConfig(config: BCEConfig): BCEConfig {
+  return config;
+}

@@ -1,16 +1,35 @@
 import { exists, readdir } from "fs/promises";
 import { Parser } from "htmlparser2";
 import { dirname, extname, join, relative, resolve } from "path";
-import type { Attributes, FullManifest, HTMLType, Properties } from "./types";
+import type {
+  Attributes,
+  BCEConfig,
+  FullManifest,
+  HTMLType,
+  Properties,
+} from "./types";
 
 export class Build {
-  dist = resolve(process.cwd(), "dist");
-  public = resolve(process.cwd(), "public");
   manifest: FullManifest;
+  config: Required<BCEConfig>;
   fileToProperty: Map<string, string> = new Map();
 
-  constructor(manifest: FullManifest) {
+  constructor(manifest: FullManifest, config: BCEConfig = {}) {
     this.manifest = manifest;
+
+    const defaultConfig: Required<BCEConfig> = {
+      minify: true,
+      sourcemap: "none",
+      outdir: resolve(process.cwd(), "dist"),
+      public: resolve(process.cwd(), "public"),
+    };
+
+    this.config = {
+      minify: config.minify ?? defaultConfig.minify,
+      sourcemap: config.sourcemap ?? defaultConfig.sourcemap,
+      outdir: resolve(config.outdir ?? defaultConfig.outdir),
+      public: resolve(config.public ?? defaultConfig.public),
+    };
   }
 
   async parse() {
@@ -32,8 +51,8 @@ export class Build {
     if (entrypoints.length !== 0) {
       const result = await Bun.build({
         entrypoints,
-        minify: true,
-        outdir: this.dist,
+        minify: this.config.minify,
+        outdir: this.config.outdir,
       });
 
       const entrypointsLength = entrypoints.length;
@@ -53,10 +72,10 @@ export class Build {
             file = build.path;
             this.fileToProperty.set(reference, file);
           }
-          const relativeFilePath = relative(this.dist, file).replaceAll(
-            /\\/g,
-            "/"
-          );
+          const relativeFilePath = relative(
+            this.config.outdir,
+            file
+          ).replaceAll(/\\/g, "/");
           this.manifest.background.service_worker = relativeFilePath;
           properties.set("background.service_worker", false);
           continue;
@@ -81,10 +100,10 @@ export class Build {
                 file = build.path;
                 this.fileToProperty.set(reference, file);
               }
-              const relativeFilePath = relative(this.dist, file).replaceAll(
-                /\\/g,
-                "/"
-              );
+              const relativeFilePath = relative(
+                this.config.outdir,
+                file
+              ).replaceAll(/\\/g, "/");
               contentScript.ts[j] = relativeFilePath;
             }
           }
@@ -126,19 +145,19 @@ export class Build {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              relativeFilePath = relative(this.dist, resolvedScript).replaceAll(
-                /\\/g,
-                "/"
-              );
+              relativeFilePath = relative(
+                this.config.outdir,
+                resolvedScript
+              ).replaceAll(/\\/g, "/");
               this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
             content = content.replaceAll(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          const relativeFilePath = relative(this.dist, file).replaceAll(
-            /\\/g,
-            "/"
-          );
+          const relativeFilePath = relative(
+            this.config.outdir,
+            file
+          ).replaceAll(/\\/g, "/");
           this.manifest.action.default_popup = relativeFilePath;
           properties.set("action.default_popup", false);
           continue;
@@ -174,19 +193,19 @@ export class Build {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              relativeFilePath = relative(this.dist, resolvedScript).replaceAll(
-                /\\/g,
-                "/"
-              );
+              relativeFilePath = relative(
+                this.config.outdir,
+                resolvedScript
+              ).replaceAll(/\\/g, "/");
               this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
             content = content.replaceAll(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          const relativeFilePath = relative(this.dist, file).replaceAll(
-            /\\/g,
-            "/"
-          );
+          const relativeFilePath = relative(
+            this.config.outdir,
+            file
+          ).replaceAll(/\\/g, "/");
           this.manifest.options_page = relativeFilePath;
           properties.set("options_page", false);
           continue;
@@ -226,19 +245,19 @@ export class Build {
               const buildResolved = result.outputs.shift();
               if (!buildResolved) break;
               resolvedScript = buildResolved.path;
-              relativeFilePath = relative(this.dist, resolvedScript).replaceAll(
-                /\\/g,
-                "/"
-              );
+              relativeFilePath = relative(
+                this.config.outdir,
+                resolvedScript
+              ).replaceAll(/\\/g, "/");
               this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
             }
             content = content.replaceAll(script, relativeFilePath);
             await Bun.write(file, content);
           }
-          const relativeFilePath = relative(this.dist, file).replaceAll(
-            /\\/g,
-            "/"
-          );
+          const relativeFilePath = relative(
+            this.config.outdir,
+            file
+          ).replaceAll(/\\/g, "/");
           this.manifest.options_ui.page = relativeFilePath;
           properties.set("options_ui.page", false);
           continue;
@@ -248,25 +267,25 @@ export class Build {
   }
 
   async copyPublic() {
-    if (!(await exists(this.public))) return;
-    const files = await readdir(this.public, {
+    if (!(await exists(this.config.public))) return;
+    const files = await readdir(this.config.public, {
       recursive: true,
       withFileTypes: true,
     });
     for (const file of files) {
       if (file.isDirectory()) continue;
-      const filePath = resolve(this.public, file.parentPath, file.name);
+      const filePath = resolve(this.config.public, file.parentPath, file.name);
       const source = Bun.file(filePath);
-      const relativeFilePath = relative(this.public, filePath);
+      const relativeFilePath = relative(this.config.public, filePath);
       const joinedFile = join("public", relativeFilePath);
-      const outFile = resolve(this.dist, joinedFile);
+      const outFile = resolve(this.config.outdir, joinedFile);
       this.fileToProperty.set(filePath, joinedFile);
       await Bun.write(outFile, source);
     }
   }
 
   async writeManifest() {
-    const file = resolve(this.dist, "manifest.json");
+    const file = resolve(this.config.outdir, "manifest.json");
     await this.resolvePathsInManifest(this.manifest);
     let content = JSON.stringify(this.manifest, null, 2).replaceAll(
       `"ts"`,
@@ -348,7 +367,7 @@ export class Build {
       if (typeof value === "object") {
         await this.resolvePathsInManifest(value);
       } else if (typeof value === "string" && extname(value) !== "") {
-        const file = resolve(this.public, "..", value);
+        const file = resolve(this.config.public, "..", value);
         const existsFile = await exists(file);
         if (!existsFile) continue;
         obj[key] = file;

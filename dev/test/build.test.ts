@@ -10,8 +10,8 @@ import {
 import { mkdir, readdir, rm } from "fs/promises";
 import { normalize, resolve } from "path";
 import { Build } from "../build";
-import { defineManifest } from "../manifest.config";
 import type { FullManifest, Properties } from "../types";
+import { defineManifest } from "../types";
 
 let build: Build;
 const cwd = resolve(import.meta.dir, "..");

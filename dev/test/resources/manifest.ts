@@ -1,4 +1,4 @@
-import { defineManifest } from "../../manifest.config";
+import { defineManifest } from "../../types";
 
 export const manifest = defineManifest({
   name: "Test",
