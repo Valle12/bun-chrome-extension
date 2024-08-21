@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "bun build.ts",
+    "build": "bce",
     "dev": "echo not implemented"
   },
   "devDependencies": {

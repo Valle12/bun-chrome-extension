@@ -1,9 +1,12 @@
 {
   "name": "bun-chrome-extension-dev",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "bce": "bce.ts"
+  },
   "files": [
     "dist"
   ],

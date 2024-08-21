@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
-
 import { input } from "@inquirer/prompts";
-import { readdir } from "fs/promises";
+import { mkdir, readdir } from "fs/promises";
 import { resolve } from "path";
 
 export class Index {
@@ -33,6 +32,7 @@ export class Index {
         content = content.replace(this.PROJECT_CONST, answer);
       await Bun.write(resolve(answer, file.name), content);
     }
+    await mkdir(resolve(answer, "public"));
   }
 }
 
