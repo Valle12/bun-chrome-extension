@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
-import { rm } from "fs/promises";
+import { exists, rm } from "fs/promises";
 import { resolve } from "path";
 import { Build } from "./build";
-import type { FullManifest } from "./types";
+import type { BCEConfig, FullManifest } from "./types";
 
 export class BCE {
   constructor() {}
@@ -10,10 +10,16 @@ export class BCE {
   async init() {
     await rm(resolve(process.cwd(), "dist"), { recursive: true });
 
-    const resolved = resolve(process.cwd(), "manifest.ts");
-    const manifestModule = await import(resolved);
+    const configFile = resolve(process.cwd(), "bce.config.ts");
+    let config: BCEConfig | undefined;
+    if (await exists(configFile)) {
+      const configModule = await import(configFile);
+      config = configModule.default;
+    }
+
+    const manifestModule = await import(resolve(process.cwd(), "manifest.ts"));
     const manifest: FullManifest = manifestModule.manifest;
-    const build = new Build(manifest);
+    const build = new Build(manifest, config);
     await build.parse();
     console.log("Build completed!");
   }
