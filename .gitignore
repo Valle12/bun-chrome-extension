@@ -176,3 +176,4 @@ dist
 
 # Custom
 test-project
+docs/.vitepress/cache
