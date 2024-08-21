@@ -20,8 +20,8 @@ describe("index.ts", () => {
     const index = new Index();
     await index.init();
     expect(inquirer.input).toHaveBeenCalledTimes(1);
-    expect(Bun.file).toHaveBeenCalledTimes(6);
-    expect(Bun.write).toHaveBeenCalledTimes(6);
+    expect(Bun.file).toHaveBeenCalledTimes(5);
+    expect(Bun.write).toHaveBeenCalledTimes(5);
     expect(String.prototype.replace).toHaveBeenCalledTimes(3);
 
     const packageFile = await Bun.file(
