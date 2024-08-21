@@ -1,2 +1,2 @@
 export { Build } from "./build";
-export { defineManifest } from "./manifest.config";
+export { defineManifest } from "./types";

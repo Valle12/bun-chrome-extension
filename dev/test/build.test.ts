@@ -10,8 +10,8 @@ import {
 import { mkdir, readdir, rm } from "fs/promises";
 import { normalize, resolve } from "path";
 import { Build } from "../build";
-import { defineManifest } from "../manifest.config";
 import type { FullManifest, Properties } from "../types";
+import { defineManifest } from "../types";
 
 let build: Build;
 const cwd = resolve(import.meta.dir, "..");
@@ -22,8 +22,8 @@ beforeEach(async () => {
     name: "test",
     version: "0.0.1",
   });
-  build.dist = resolve(cwd, "dist");
-  await rm(build.dist, { recursive: true });
+  build.config.outdir = resolve(cwd, "dist");
+  await rm(build.config.outdir, { recursive: true });
 });
 
 describe("extractPaths", () => {
@@ -793,19 +793,19 @@ describe("parseManifest", () => {
     if (!build.manifest.action?.default_popup)
       throw new Error("default_popup is undefined");
     const popup = await Bun.file(
-      resolve(build.dist, build.manifest.action?.default_popup)
+      resolve(build.config.outdir, build.manifest.action?.default_popup)
     ).text();
     expect(popup).toContain("test3.js");
     if (!build.manifest.options_page)
       throw new Error("options_page is undefined");
     const optionsPage = await Bun.file(
-      resolve(build.dist, build.manifest.options_page)
+      resolve(build.config.outdir, build.manifest.options_page)
     ).text();
     expect(optionsPage).toContain("test4.js");
     if (!build.manifest.options_ui?.page)
       throw new Error("options_ui.page is undefined");
     const optionsUI = await Bun.file(
-      resolve(build.dist, build.manifest.options_ui?.page)
+      resolve(build.config.outdir, build.manifest.options_ui?.page)
     ).text();
     expect(optionsUI).toContain("src/test5.js");
   });
@@ -829,7 +829,9 @@ describe("writeManifest", () => {
     await build.writeManifest();
 
     expect(Bun.write).toHaveBeenCalledTimes(1);
-    const content = await Bun.file(resolve(build.dist, "manifest.json")).text();
+    const content = await Bun.file(
+      resolve(build.config.outdir, "manifest.json")
+    ).text();
     expect(content).toContain(`"name": "test"`);
     expect(content).toContain(`"version": "0.0.1"`);
   });
@@ -848,13 +850,15 @@ describe("writeManifest", () => {
     await build.writeManifest();
 
     expect(Bun.write).toHaveBeenCalledTimes(1);
-    const content = await Bun.file(resolve(build.dist, "manifest.json")).text();
+    const content = await Bun.file(
+      resolve(build.config.outdir, "manifest.json")
+    ).text();
     expect(content).toContain('"js": [');
     expect(content).toContain('"test1.js"');
   });
 
   test("test with png in public folder", async () => {
-    build.public = resolve(cwd, "test/resources/public");
+    build.config.public = resolve(cwd, "test/resources/public");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -870,7 +874,9 @@ describe("writeManifest", () => {
       normalize("public/icons/16.png")
     );
     expect(Bun.write).toHaveBeenCalledTimes(2);
-    const content = await Bun.file(resolve(build.dist, "manifest.json")).text();
+    const content = await Bun.file(
+      resolve(build.config.outdir, "manifest.json")
+    ).text();
     const manifest = JSON.parse(content);
     expect(manifest.icons["16"]).toBe("public/icons/16.png");
   });
@@ -878,7 +884,7 @@ describe("writeManifest", () => {
 
 describe("copyPublic", () => {
   beforeEach(async () => {
-    build.public = resolve(cwd, "test/resources/public");
+    build.config.public = resolve(cwd, "test/resources/public");
     spyOn(Bun, "write");
     spyOn(await import("fs/promises"), "readdir");
   });
@@ -888,7 +894,7 @@ describe("copyPublic", () => {
   });
 
   test("test with no public dir", async () => {
-    build.public = resolve(cwd, "public");
+    build.config.public = resolve(cwd, "public");
 
     await build.copyPublic();
 
@@ -896,14 +902,14 @@ describe("copyPublic", () => {
   });
 
   test("test with empty public dir", async () => {
-    build.public = resolve(cwd, "test/resources/empty");
-    await mkdir(build.public);
+    build.config.public = resolve(cwd, "test/resources/empty");
+    await mkdir(build.config.public);
 
     await build.copyPublic();
 
     expect(readdir).toHaveBeenCalledTimes(1);
     expect(Bun.write).not.toHaveBeenCalled();
-    await rm(build.public, { recursive: true });
+    await rm(build.config.public, { recursive: true });
   });
 
   test("test with file in public folder", async () => {
@@ -911,7 +917,7 @@ describe("copyPublic", () => {
 
     expect(readdir).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledTimes(1);
-    const files = await readdir(resolve(build.dist, "public"), {
+    const files = await readdir(resolve(build.config.outdir, "public"), {
       recursive: true,
     });
     expect(files.length).toBe(2); // icons also counts
@@ -930,7 +936,7 @@ describe("parse", () => {
   });
 
   test("test with no additional config", async () => {
-    build.public = resolve(cwd, "public");
+    build.config.public = resolve(cwd, "public");
 
     await build.parse();
 
@@ -941,8 +947,8 @@ describe("parse", () => {
   });
 
   test("test with manifest, but no public folder", async () => {
-    build.public = resolve(cwd, "test/resources/empty");
-    await mkdir(build.public);
+    build.config.public = resolve(cwd, "test/resources/empty");
+    await mkdir(build.config.public);
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -959,17 +965,17 @@ describe("parse", () => {
     expect(build.fileToProperty.size).toBe(1);
     expect(
       build.fileToProperty.get(resolve(cwd, "test/resources/test1.ts"))
-    ).toBe(resolve(build.dist, "test1.js"));
+    ).toBe(resolve(build.config.outdir, "test1.js"));
     const manifestJson = await Bun.file(
-      resolve(build.dist, "manifest.json")
+      resolve(build.config.outdir, "manifest.json")
     ).text();
     const manifest: FullManifest = JSON.parse(manifestJson);
     expect(manifest.background?.service_worker).toBe("test1.js");
-    await rm(build.public, { recursive: true });
+    await rm(build.config.public, { recursive: true });
   });
 
   test("test with basic manifest and public folder", async () => {
-    build.public = resolve(cwd, "test/resources/public");
+    build.config.public = resolve(cwd, "test/resources/public");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -980,7 +986,7 @@ describe("parse", () => {
     expect(build.parseManifest).toHaveBeenCalledTimes(1);
     expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    const files = await readdir(build.dist, { recursive: true });
+    const files = await readdir(build.config.outdir, { recursive: true });
     expect(files.length).toBe(4);
   });
 });
