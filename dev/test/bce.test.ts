@@ -17,12 +17,6 @@ describe("init", async () => {
   };
 
   beforeEach(async () => {
-    const resources = resolve(import.meta.dir, "resources/manifest.ts");
-    const dist = resolve(import.meta.dir, "..", "dist");
-    spyOn(await import("path"), "resolve").mockImplementation((...args) => {
-      if (args.includes("manifest.ts")) return resources;
-      return dist;
-    });
     await mock.module("../build", () => {
       return {
         Build: mock(() => {
@@ -40,14 +34,53 @@ describe("init", async () => {
   });
 
   test("test if basic manifest will be read", async () => {
+    const dist = resolve(import.meta.dir, "..", "dist");
+    const manifest = resolve(import.meta.dir, "resources/manifest.ts");
+    spyOn(await import("path"), "resolve").mockImplementation((...args) => {
+      if (args.includes("manifest.ts")) return manifest;
+      return dist;
+    });
+
     const bce = new BCE();
     await bce.init();
 
     expect(Build).toHaveBeenCalledTimes(1);
-    expect(Build).toHaveBeenCalledWith({
-      manifest_version: 3,
-      name: "Test",
-      version: "0.0.1",
+    expect(Build).toHaveBeenCalledWith(
+      {
+        manifest_version: 3,
+        name: "Test",
+        version: "0.0.1",
+      },
+      undefined
+    );
+  });
+
+  test("test if config will be read with manifest", async () => {
+    const dist = resolve(import.meta.dir, "..", "dist");
+    const manifest = resolve(import.meta.dir, "resources/manifest.ts");
+    const config = resolve(import.meta.dir, "resources/bce.config.ts");
+    spyOn(await import("path"), "resolve").mockImplementation((...args) => {
+      if (args.includes("manifest.ts")) return manifest;
+      if (args.includes("bce.config.ts")) return config;
+      return dist;
     });
+
+    const bce = new BCE();
+    await bce.init();
+
+    expect(Build).toHaveBeenCalledTimes(1);
+    expect(Build).toHaveBeenCalledWith(
+      {
+        manifest_version: 3,
+        name: "Test",
+        version: "0.0.1",
+      },
+      {
+        minify: false,
+        sourcemap: "linked",
+        outdir: "dist",
+        public: "public",
+      }
+    );
   });
 });
