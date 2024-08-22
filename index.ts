@@ -8,6 +8,8 @@ export class Index {
   PROJECT_FOLDER = "project";
   IGNORE_FILES = ["node_modules", "bun.lockb", "test", "dist"];
   REPLACE_FILES = ["README.md", "package.json", "manifest.ts"];
+  bunx = false;
+  metaDir = import.meta.dir;
 
   constructor() {}
 
@@ -17,6 +19,8 @@ export class Index {
       required: true,
       default: "project-name",
     });
+
+    if (this.bunx) this.metaDir = resolve(process.cwd(), answer);
 
     // clone project folder
     await Bun.spawn([
@@ -37,14 +41,14 @@ export class Index {
     }).exited;
 
     // create local project
-    const files = await readdir(resolve(import.meta.dir, this.PROJECT_FOLDER), {
+    const files = await readdir(resolve(this.metaDir, this.PROJECT_FOLDER), {
       withFileTypes: true,
     });
     for (const file of files) {
       if (this.IGNORE_FILES.includes(file.name)) continue;
       if (file.isDirectory()) continue;
       let content = await Bun.file(
-        resolve(import.meta.dir, this.PROJECT_FOLDER, file.name)
+        resolve(this.metaDir, this.PROJECT_FOLDER, file.name)
       ).text();
       if (this.REPLACE_FILES.includes(file.name))
         content = content.replace(this.PROJECT_CONST, answer);
@@ -60,5 +64,6 @@ export class Index {
 
 if (import.meta.path === Bun.main) {
   const index = new Index();
+  index.bunx = true;
   index.init();
 }
