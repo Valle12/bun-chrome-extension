@@ -4,7 +4,7 @@ on:
   push:
     branches: [master]
     paths:
-      - "dev/"
+      - "dev"
 
 defaults:
   run:
