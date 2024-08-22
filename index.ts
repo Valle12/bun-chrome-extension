@@ -21,6 +21,7 @@ export class Index {
     });
 
     if (this.bunx) this.metaDir = resolve(process.cwd(), answer);
+    console.log(answer, process.cwd(), this.metaDir);
 
     // clone project folder
     await Bun.spawn([
@@ -47,11 +48,13 @@ export class Index {
     for (const file of files) {
       if (this.IGNORE_FILES.includes(file.name)) continue;
       if (file.isDirectory()) continue;
+      resolve(this.metaDir, this.PROJECT_FOLDER, file.name);
       let content = await Bun.file(
         resolve(this.metaDir, this.PROJECT_FOLDER, file.name)
       ).text();
       if (this.REPLACE_FILES.includes(file.name))
         content = content.replace(this.PROJECT_CONST, answer);
+      console.log(resolve(answer, file.name));
       await Bun.write(resolve(answer, file.name), content);
     }
     await mkdir(resolve(answer, "public"));
