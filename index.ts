@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { input } from "@inquirer/prompts";
-import { mkdir, readdir } from "fs/promises";
+import { mkdir, readdir, rm } from "fs/promises";
 import { resolve } from "path";
 
 export class Index {
@@ -18,6 +18,24 @@ export class Index {
       default: "project-name",
     });
 
+    // clone project folder
+    await Bun.spawn([
+      "git",
+      "clone",
+      "--no-checkout",
+      "https://github.com/Valle12/bun-chrome-extension.git",
+      answer,
+    ]).exited;
+    await Bun.spawn(["git", "sparse-checkout", "init", "--no-cone"], {
+      cwd: answer,
+    }).exited;
+    await Bun.spawn(["git", "sparse-checkout", "set", "project"], {
+      cwd: answer,
+    }).exited;
+    await Bun.spawn(["git", "checkout", "master"], {
+      cwd: answer,
+    }).exited;
+
     // create local project
     const files = await readdir(resolve(import.meta.dir, this.PROJECT_FOLDER), {
       withFileTypes: true,
@@ -33,6 +51,10 @@ export class Index {
       await Bun.write(resolve(answer, file.name), content);
     }
     await mkdir(resolve(answer, "public"));
+    await rm(resolve(answer, this.PROJECT_FOLDER), {
+      recursive: true,
+      force: true,
+    });
   }
 }
 
