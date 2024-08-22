@@ -46,6 +46,6 @@ The last step is to add a build script to your package.json which creates the ou
 
 ```json
 "scripts": {
-    "build": "bce"
+  "build": "bce"
 }
 ```
