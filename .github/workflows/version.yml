@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-node@v4
 
       - name: Get updates in dev folder
-        id: changes
+        id: dev-changes
         run: |
           if [[ $(git diff --name-only origin/master...HEAD | grep dev/) ]]; then
             echo "updated=true" >> "$GITHUB_OUTPUT"
@@ -26,16 +26,39 @@ jobs:
             echo "updated=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Get package.json version
-        id: check
-        if: steps.changes.outputs.updated == 'true'
+      - name: Get dev package.json version
+        id: dev-check
+        if: steps.dev-changes.outputs.updated == 'true'
         uses: EndBug/version-check@v2.1.4
         with:
           diff-search: true
           file-name: dev/package.json
 
-      - name: Check if package.json version changed
-        if: steps.check.outputs.changed == 'false'
+      - name: Check if dev package.json version changed
+        if: steps.dev-check.outputs.changed == 'false'
+        run: |
+          echo "Version in dev/package.json has not changed"
+          exit 1
+
+      - name: Get updates in main folder except dev
+        id: main-changes
+        run: |
+          if [[ $(git diff --name-only origin/master...HEAD | grep -v dev/) ]]; then
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get main package.json version
+        id: main-check
+        if: steps.main-changes.outputs.updated == 'true'
+        uses: EndBug/version-check@v2.1.4
+        with:
+          diff-search: true
+          file-name: package.json
+
+      - name: Check if main package.json version changed
+        if: steps.main-check.outputs.changed == 'false'
         run: |
           echo "Version in package.json has not changed"
           exit 1
