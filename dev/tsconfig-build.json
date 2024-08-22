@@ -6,5 +6,5 @@
     "outDir": "dist",
     "noEmit": false
   },
-  "include": ["index.ts"]
+  "include": ["index.ts", "bce.ts"]
 }
