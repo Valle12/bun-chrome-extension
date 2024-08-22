@@ -9,6 +9,9 @@ describe("index.ts", () => {
     spyOn(inquirer, "input").mockResolvedValue("test-project");
     spyOn(Bun, "file");
     spyOn(Bun, "write");
+    type t = ReturnType<typeof Bun.spawn>;
+    const result: t = { exited: Promise.resolve(0) } as t;
+    spyOn(Bun, "spawn").mockImplementation(() => result);
     spyOn(String.prototype, "replace");
   });
 
