@@ -1,3 +1,9 @@
+---
+prev:
+  text: "Home"
+  link: "/"
+---
+
 # Quickstart
 
 ## New project
