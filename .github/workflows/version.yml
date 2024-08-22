@@ -20,7 +20,7 @@ jobs:
       - name: Get updates in dev folder
         id: changes
         run: |
-          if [[ $(git diff --name-only origin/master...HEAD | grep dev) ]]; then
+          if [[ $(git diff --name-only origin/master...HEAD | grep dev/) ]]; then
             echo "updated=true" >> "$GITHUB_OUTPUT"
           else
             echo "updated=false" >> "$GITHUB_OUTPUT"
