@@ -3,8 +3,7 @@ name: Deploy package to npmjs registry
 on:
   push:
     branches: [master]
-    paths:
-      - "dev"
+    paths: "dev/**"
 
 defaults:
   run:
