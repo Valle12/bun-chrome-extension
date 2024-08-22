@@ -1,6 +1,6 @@
 {
   "name": "bun-chrome-extension",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "type": "module",
   "main": "index.ts",
   "bin": {
