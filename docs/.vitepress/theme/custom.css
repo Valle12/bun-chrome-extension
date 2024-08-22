@@ -1,0 +1,5 @@
+strong {
+  background-color: var(--vp-c-divider);
+  padding: 0.2rem;
+  border-radius: 3px;
+}
