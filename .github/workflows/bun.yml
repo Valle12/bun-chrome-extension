@@ -14,7 +14,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
 
-      - run: cd dev && bun install --frozen-lockfile && bun run build && bun link
-      - run: cd project && bun install --frozen-lockfile && bun link bun-chrome-extension-dev
+      - run: cd dev && bun install --frozen-lockfile && bun run build
       - run: bun install --frozen-lockfile
       - run: bun test
