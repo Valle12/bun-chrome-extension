@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "bun-chrome-extension-dev": "^0.1.0"
+    "bun-chrome-extension-dev": "^0.1.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
