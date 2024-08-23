@@ -1,6 +1,14 @@
 {
   "name": "bun-chrome-extension",
-  "version": "0.0.18",
+  "version": "0.1.0",
+  "keywords": [
+    "bun",
+    "chrome",
+    "extension",
+    "template",
+    "typescript"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "main": "index.ts",
   "bin": {
