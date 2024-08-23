@@ -60,6 +60,10 @@ export class Index {
       recursive: true,
       force: true,
     });
+    await rm(resolve(answer, ".git"), {
+      recursive: true,
+      force: true,
+    });
   }
 }
 
