@@ -8,7 +8,7 @@ import {
   test,
 } from "bun:test";
 import { mkdir, readdir, rm } from "fs/promises";
-import { normalize, resolve } from "path";
+import { resolve } from "path";
 import { Build } from "../build";
 import type { FullManifest, Properties } from "../types";
 import { defineManifest } from "../types";
@@ -480,7 +480,8 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Array.prototype.shift).toHaveBeenCalledTimes(1);
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.service_worker).toContain("test1-");
+    expect(build.manifest.background?.service_worker).toContain(".js");
   });
 
   test("test with content_scripts info", async () => {
@@ -502,7 +503,8 @@ describe("parseManifest", () => {
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test1.js");
+    expect(ts[0]).toContain("test1-");
+    expect(ts[0]).toContain(".js");
   });
 
   test("test with background and content_scripts info", async () => {
@@ -523,12 +525,14 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.service_worker).toContain("test1-");
+    expect(build.manifest.background?.service_worker).toContain(".js");
     const contentScripts = build.manifest.content_scripts;
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test2.js");
+    expect(ts[0]).toContain("test2-");
+    expect(ts[0]).toContain(".js");
   });
 
   test("test with multiple ts files", async () => {
@@ -553,8 +557,10 @@ describe("parseManifest", () => {
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test1.js");
-    expect(ts[1]).toBe("test2.js");
+    expect(ts[0]).toContain("test1-");
+    expect(ts[0]).toContain(".js");
+    expect(ts[1]).toContain("test2-");
+    expect(ts[1]).toContain(".js");
   });
 
   test("test with multiple content_scripts", async () => {
@@ -579,10 +585,12 @@ describe("parseManifest", () => {
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test1.js");
+    expect(ts[0]).toContain("test1-");
+    expect(ts[0]).toContain(".js");
     const ts2 = contentScripts[1].ts;
     if (!ts2) throw new Error("ts2 is undefined");
-    expect(ts2[0]).toBe("test2.js");
+    expect(ts2[0]).toContain("test2-");
+    expect(ts2[0]).toContain(".js");
   });
 
   test("test with popup info", async () => {
@@ -648,12 +656,14 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.service_worker).toContain("test1-");
+    expect(build.manifest.background?.service_worker).toContain(".js");
     const contentScripts = build.manifest.content_scripts;
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test1.js");
+    expect(ts[0]).toContain("test1-");
+    expect(ts[0]).toContain(".js");
   });
 
   test("test two properties pointing to the same file and multiple ts files", async () => {
@@ -676,13 +686,16 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.service_worker).toContain("test1-");
+    expect(build.manifest.background?.service_worker).toContain(".js");
     const contentScripts = build.manifest.content_scripts;
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test1.js");
-    expect(ts[1]).toBe("test2.js");
+    expect(ts[0]).toContain("test1-");
+    expect(ts[0]).toContain(".js");
+    expect(ts[1]).toContain("test2-");
+    expect(ts[1]).toContain(".js");
   });
 
   test("test two properties pointing to the same file and multiple content_scripts", async () => {
@@ -705,15 +718,18 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.service_worker).toContain("test1-");
+    expect(build.manifest.background?.service_worker).toContain(".js");
     const contentScripts = build.manifest.content_scripts;
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test1.js");
+    expect(ts[0]).toContain("test1-");
+    expect(ts[0]).toContain(".js");
     const ts2 = contentScripts[1].ts;
     if (!ts2) throw new Error("ts2 is undefined");
-    expect(ts2[0]).toBe("test2.js");
+    expect(ts2[0]).toContain("test2-");
+    expect(ts2[0]).toContain(".js");
   });
 
   test("test with 5 entries while the ts files point to the same file", async () => {
@@ -742,17 +758,22 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.service_worker).toContain("test1-");
+    expect(build.manifest.background?.service_worker).toContain(".js");
     const contentScripts = build.manifest.content_scripts;
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test2.js");
-    expect(ts[1]).toBe("test3.js");
+    expect(ts[0]).toContain("test2-");
+    expect(ts[0]).toContain(".js");
+    expect(ts[1]).toContain("test3-");
+    expect(ts[1]).toContain(".js");
     const ts2 = contentScripts[1].ts;
     if (!ts2) throw new Error("ts2 is undefined");
-    expect(ts2[0]).toBe("test3.js");
-    expect(ts2[1]).toBe("test2.js");
+    expect(ts2[0]).toContain("test3-");
+    expect(ts2[0]).toContain(".js");
+    expect(ts2[1]).toContain("test2-");
+    expect(ts2[1]).toContain(".js");
   });
 
   test("test with everything", async () => {
@@ -780,12 +801,14 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledTimes(3);
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.service_worker).toContain("test1-");
+    expect(build.manifest.background?.service_worker).toContain(".js");
     const contentScripts = build.manifest.content_scripts;
     if (!contentScripts) throw new Error("content_scripts is undefined");
     const ts = contentScripts[0].ts;
     if (!ts) throw new Error("ts is undefined");
-    expect(ts[0]).toBe("test2.js");
+    expect(ts[0]).toContain("test2-");
+    expect(ts[0]).toContain(".js");
     expect(build.manifest.action?.default_popup).toContain("popup-");
     expect(build.manifest.options_page).toContain("optionsPage-");
     expect(build.manifest.options_ui?.page).toContain("optionsUI-");
@@ -795,19 +818,22 @@ describe("parseManifest", () => {
     const popup = await Bun.file(
       resolve(build.config.outdir, build.manifest.action?.default_popup)
     ).text();
-    expect(popup).toContain("test3.js");
+    expect(popup).toContain("test3-");
+    expect(popup).toContain(".js");
     if (!build.manifest.options_page)
       throw new Error("options_page is undefined");
     const optionsPage = await Bun.file(
       resolve(build.config.outdir, build.manifest.options_page)
     ).text();
-    expect(optionsPage).toContain("test4.js");
+    expect(optionsPage).toContain("test4-");
+    expect(optionsPage).toContain(".js");
     if (!build.manifest.options_ui?.page)
       throw new Error("options_ui.page is undefined");
     const optionsUI = await Bun.file(
       resolve(build.config.outdir, build.manifest.options_ui?.page)
     ).text();
-    expect(optionsUI).toContain("src/test5.js");
+    expect(optionsUI).toContain("src/test5-");
+    expect(optionsUI).toContain(".js");
   });
 });
 
@@ -858,6 +884,7 @@ describe("writeManifest", () => {
   });
 
   test("test with png in public folder", async () => {
+    build.cwd = cwd;
     build.config.public = resolve(cwd, "test/resources/public");
     build.manifest = defineManifest({
       name: "test",
@@ -866,12 +893,12 @@ describe("writeManifest", () => {
         16: "public/icons/16.png",
       },
     });
-    await build.copyPublic();
 
+    await build.copyPublic();
     await build.writeManifest();
 
     expect(build.fileToProperty.values().next().value).toBe(
-      normalize("public/icons/16.png")
+      "test/resources/public/icons/16.png"
     );
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const content = await Bun.file(
@@ -913,6 +940,8 @@ describe("copyPublic", () => {
   });
 
   test("test with file in public folder", async () => {
+    build.config.public = resolve(cwd, "test/resources/public");
+
     await build.copyPublic();
 
     expect(readdir).toHaveBeenCalledTimes(1);
@@ -965,12 +994,12 @@ describe("parse", () => {
     expect(build.fileToProperty.size).toBe(1);
     expect(
       build.fileToProperty.get(resolve(cwd, "test/resources/test1.ts"))
-    ).toBe(resolve(build.config.outdir, "test1.js"));
+    ).toContain(resolve(build.config.outdir, "test1-"));
     const manifestJson = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
     ).text();
     const manifest: FullManifest = JSON.parse(manifestJson);
-    expect(manifest.background?.service_worker).toBe("test1.js");
+    expect(manifest.background?.service_worker).toContain("test1-");
     await rm(build.config.public, { recursive: true });
   });
 
