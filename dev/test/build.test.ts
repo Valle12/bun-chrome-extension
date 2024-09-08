@@ -8,7 +8,7 @@ import {
   test,
 } from "bun:test";
 import { mkdir, readdir, rm } from "fs/promises";
-import { resolve } from "path";
+import { join, relative, resolve } from "path";
 import { Build } from "../build";
 import type { FullManifest, Properties } from "../types";
 import { defineManifest } from "../types";
@@ -838,12 +838,14 @@ describe("parseManifest", () => {
 });
 
 describe("writeManifest", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     spyOn(Bun, "write");
+    await rm(resolve(cwd, "public"), { recursive: true });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
+    await rm(resolve(cwd, "public"), { recursive: true });
   });
 
   test("test with minimal config", async () => {
@@ -885,7 +887,7 @@ describe("writeManifest", () => {
 
   test("test with png in public folder", async () => {
     build.cwd = cwd;
-    build.config.public = resolve(cwd, "test/resources/public");
+    await createTestPublicFolder("public", ["test/resources/icons/16.png"]);
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -897,64 +899,94 @@ describe("writeManifest", () => {
     await build.copyPublic();
     await build.writeManifest();
 
-    expect(build.fileToProperty.values().next().value).toBe(
-      "test/resources/public/icons/16.png"
-    );
-    expect(Bun.write).toHaveBeenCalledTimes(2);
+    const valuesArray = Array.from(build.fileToProperty.values());
+    expect(valuesArray.includes("public/icons/16.png")).toBeTrue();
+    expect(Bun.write).toHaveBeenCalledTimes(3);
     const content = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
     ).text();
     const manifest = JSON.parse(content);
     expect(manifest.icons["16"]).toBe("public/icons/16.png");
+    await rm(resolve(cwd, "public"), { recursive: true });
+  });
+
+  test.only("test with multiple ways of defining paths", async () => {
+    build.cwd = cwd;
+    await createTestPublicFolder("public", [
+      "test/resources/icons/16.png",
+      "test/resources/icons/32.png",
+      "test/resources/icons/48.png",
+      "test/resources/icons/128.png",
+    ]);
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      icons: {
+        16: "public/icons/16.png",
+        32: "public\\icons\\32.png",
+        48: "public/icons\\48.png",
+        128: build.config.public + "/icons/128.png",
+      },
+    });
+
+    await build.preprocessManifest();
+    await build.copyPublic();
+    await build.writeManifest();
+
+    const valuesArray = Array.from(build.fileToProperty.values());
+    expect(valuesArray.includes("public/icons/16.png")).toBeTrue();
+    expect(valuesArray.includes("public/icons/32.png")).toBeTrue();
+    expect(valuesArray.includes("public/icons/48.png")).toBeTrue();
+    expect(valuesArray.includes("public/icons/128.png")).toBeTrue();
+    expect(Bun.write).toHaveBeenCalledTimes(9);
   });
 });
 
 describe("copyPublic", () => {
   beforeEach(async () => {
-    build.config.public = resolve(cwd, "test/resources/public");
     spyOn(Bun, "write");
     spyOn(await import("fs/promises"), "readdir");
+    await rm(resolve(cwd, "public"), { recursive: true });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
+    await rm(resolve(cwd, "public"), { recursive: true });
   });
 
   test("test with no public dir", async () => {
-    build.config.public = resolve(cwd, "public");
-
     await build.copyPublic();
 
     expect(readdir).not.toHaveBeenCalled();
   });
 
   test("test with empty public dir", async () => {
-    build.config.public = resolve(cwd, "test/resources/empty");
-    await mkdir(build.config.public);
+    await mkdir(resolve(cwd, "public"));
 
     await build.copyPublic();
 
     expect(readdir).toHaveBeenCalledTimes(1);
     expect(Bun.write).not.toHaveBeenCalled();
-    await rm(build.config.public, { recursive: true });
   });
 
   test("test with file in public folder", async () => {
-    build.config.public = resolve(cwd, "test/resources/public");
+    build.cwd = cwd;
+    await createTestPublicFolder("public", ["test/resources/icons/16.png"]);
 
     await build.copyPublic();
 
     expect(readdir).toHaveBeenCalledTimes(1);
-    expect(Bun.write).toHaveBeenCalledTimes(1);
+    expect(Bun.write).toHaveBeenCalledTimes(4);
     const files = await readdir(resolve(build.config.outdir, "public"), {
       recursive: true,
     });
-    expect(files.length).toBe(2); // icons also counts
+    expect(files.length).toBe(5); // icons also counts
   });
 });
 
 describe("parse", () => {
   beforeEach(() => {
+    spyOn(build, "preprocessManifest");
     spyOn(build, "parseManifest");
     spyOn(build, "copyPublic");
     spyOn(build, "writeManifest");
@@ -969,6 +1001,7 @@ describe("parse", () => {
 
     await build.parse();
 
+    expect(build.preprocessManifest).toHaveBeenCalledTimes(1);
     expect(build.parseManifest).toHaveBeenCalledTimes(1);
     expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
@@ -988,6 +1021,7 @@ describe("parse", () => {
 
     await build.parse();
 
+    expect(build.preprocessManifest).toHaveBeenCalledTimes(1);
     expect(build.parseManifest).toHaveBeenCalledTimes(1);
     expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
@@ -1016,6 +1050,19 @@ describe("parse", () => {
     expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
     const files = await readdir(build.config.outdir, { recursive: true });
-    expect(files.length).toBe(4);
+    expect(files.length).toBe(7);
   });
 });
+
+async function createTestPublicFolder(publicFolder: string, files: string[]) {
+  for (const file of files) {
+    const inputFilePath = resolve(cwd, file);
+    const inputFile = Bun.file(inputFilePath);
+    const resolvedPublic = resolve(cwd, publicFolder);
+    const outDir = resolve(
+      resolvedPublic,
+      relative(join(cwd, "test/resources"), inputFilePath)
+    );
+    await Bun.write(outDir, inputFile);
+  }
+}

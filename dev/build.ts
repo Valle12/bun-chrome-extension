@@ -1,17 +1,20 @@
 import { exists, readdir } from "fs/promises";
 import { Parser } from "htmlparser2";
-import { dirname, extname, join, relative, resolve } from "path";
+import { dirname, extname, join, normalize, relative, resolve } from "path";
 import type {
   Attributes,
   BCEConfig,
   FullManifest,
   HTMLType,
+  Icons,
   Properties,
 } from "./types";
 
 export class Build {
   manifest: FullManifest;
   config: Required<BCEConfig>;
+  // TODO potentially remove fileToProperty and set the contents of manifest in a different way
+  // Also check for specific icons or default icons instead of checking all paths
   fileToProperty: Map<string, string> = new Map();
   cwd = process.cwd();
 
@@ -34,9 +37,28 @@ export class Build {
   }
 
   async parse() {
+    await this.preprocessManifest();
     await this.parseManifest();
     await this.copyPublic();
     await this.writeManifest();
+  }
+
+  async preprocessManifest() {
+    if (this.manifest.icons) {
+      const icons = this.manifest.icons as Icons;
+      for (const [key, value] of Object.entries(icons)) {
+        if (!value) continue;
+        icons[key] = normalize(value);
+      }
+    }
+
+    if (this.manifest.action && this.manifest.action.default_icon) {
+      const icons = this.manifest.action.default_icon as Icons;
+      for (const [key, value] of Object.entries(icons)) {
+        if (!value) continue;
+        icons[key] = normalize(value);
+      }
+    }
   }
 
   async parseManifest() {
