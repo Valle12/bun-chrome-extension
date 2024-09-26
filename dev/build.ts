@@ -24,8 +24,8 @@ export class Build {
     const defaultConfig: Required<BCEConfig> = {
       minify: true,
       sourcemap: "none",
-      outdir: resolve(process.cwd(), "dist"),
-      public: resolve(process.cwd(), "public"),
+      outdir: resolve(this.cwd, "dist"),
+      public: resolve(this.cwd, "public"),
     };
 
     this.config = {
