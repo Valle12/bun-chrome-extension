@@ -840,12 +840,13 @@ describe("parseManifest", () => {
 describe("writeManifest", () => {
   beforeEach(async () => {
     spyOn(Bun, "write");
-    await rm(resolve(cwd, build.config.public), { recursive: true });
+    build.config.public = resolve(cwd, "public");
+    await rm(build.config.public, { recursive: true });
   });
 
   afterEach(async () => {
     jest.clearAllMocks();
-    await rm(resolve(cwd, build.config.public), { recursive: true });
+    await rm(build.config.public, { recursive: true });
   });
 
   test("test with minimal config", async () => {
@@ -903,7 +904,6 @@ describe("writeManifest", () => {
     await build.writeManifest();
 
     const valuesArray = Array.from(build.fileToProperty.values());
-    console.log(valuesArray);
     expect(valuesArray.includes("public/icons/16.png")).toBeTrue();
     expect(Bun.write).toHaveBeenCalledTimes(3);
     const content = await Bun.file(
@@ -949,12 +949,13 @@ describe("copyPublic", () => {
   beforeEach(async () => {
     spyOn(Bun, "write");
     spyOn(await import("fs/promises"), "readdir");
-    await rm(resolve(cwd, build.config.public), { recursive: true });
+    build.config.public = resolve(cwd, "public");
+    await rm(build.config.public, { recursive: true });
   });
 
   afterEach(async () => {
     jest.clearAllMocks();
-    await rm(resolve(cwd, build.config.public), { recursive: true });
+    await rm(build.config.public, { recursive: true });
   });
 
   test("test with no public dir", async () => {
@@ -998,6 +999,7 @@ describe("parse", () => {
     spyOn(build, "parseManifest");
     spyOn(build, "copyPublic");
     spyOn(build, "writeManifest");
+    build.config.public = resolve(cwd, "public");
     await rm(build.config.public, { recursive: true });
   });
 

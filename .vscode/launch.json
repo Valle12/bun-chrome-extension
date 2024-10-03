@@ -19,7 +19,8 @@
       "name": "Debug Bun",
       "program": "${file}",
       "cwd": "${workspaceFolder}",
-      "stopOnEntry": false
+      "stopOnEntry": false,
+      "args": ["--timeout", "500000"]
     }
   ]
 }

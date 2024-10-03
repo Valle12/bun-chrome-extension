@@ -310,7 +310,7 @@ export class Build {
       const outFile = resolve(
         this.config.outdir,
         publicDir,
-        relative(this.config.public, filePath)
+        relative(this.config.public, filePathResolved)
       );
       const source = Bun.file(resolvedLinuxFilePath);
       this.fileToProperty.set(filePath, linuxFilePath);
