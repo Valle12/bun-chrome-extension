@@ -3,9 +3,9 @@ import {
   beforeEach,
   describe,
   expect,
-  jest,
   spyOn,
   test,
+  mock
 } from "bun:test";
 import { mkdir, readdir, rm } from "fs/promises";
 import { join, relative, resolve } from "path";
@@ -25,6 +25,10 @@ beforeEach(async () => {
   build.config.outdir = resolve(cwd, "dist");
   await rm(build.config.outdir, { recursive: true });
 });
+
+afterEach(async () => {
+  await rm(build.config.outdir, {recursive: true});
+})
 
 describe("extractPaths", () => {
   test("test with no additional config", () => {
@@ -453,7 +457,7 @@ describe("parseManifest", () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    mock.restore()
   });
 
   test("test with no additional config", async () => {
@@ -845,7 +849,7 @@ describe("writeManifest", () => {
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
+    mock.restore();
     await rm(build.config.public, { recursive: true });
   });
 
@@ -886,7 +890,7 @@ describe("writeManifest", () => {
     expect(content).toContain('"test1.js"');
   });
 
-  test.only("test with png in public folder", async () => {
+  test("test with png in public folder", async () => {
     build.cwd = cwd;
     await createTestPublicFolder(build.config.public, [
       "test/resources/icons/16.png",
@@ -942,7 +946,46 @@ describe("writeManifest", () => {
     expect(valuesArray.includes("public/icons/48.png")).toBeTrue();
     expect(valuesArray.includes("public/icons/128.png")).toBeTrue();
     expect(Bun.write).toHaveBeenCalledTimes(9);
+
+    const content = await Bun.file(
+      resolve(build.config.outdir, "manifest.json")
+    ).text();
+    const manifest = JSON.parse(content);
+    expect(manifest.icons["16"]).toBe("public/icons/16.png");
+    expect(manifest.icons["32"]).toBe("public/icons/32.png");
+    expect(manifest.icons["48"]).toBe("public/icons/48.png");
+    expect(manifest.icons["128"]).toBe("public/icons/128.png");
   });
+
+  test("test with different public and out dir", async () => {
+    build.cwd = cwd;
+    build.config.public = resolve(cwd, "testPublic");
+    build.config.outdir = resolve(cwd, "out");
+    await createTestPublicFolder(build.config.public, [
+      "test/resources/icons/16.png"
+    ])
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      icons: {
+        16: "testPublic/icons/16.png"
+      }
+    })
+
+    await build.preprocessManifest();
+    await build.copyPublic();
+    await build.writeManifest();
+
+    const valuesArray = Array.from(build.fileToProperty.values())
+    expect(valuesArray.includes("testPublic/icons/16.png")).toBeTrue();
+    expect(Bun.write).toHaveBeenCalledTimes(3);
+    
+    const content = await Bun.file(
+      resolve(build.config.outdir, "manifest.json")
+    ).text();
+    const manifest = JSON.parse(content);
+    expect(manifest.icons["16"]).toBe("testPublic/icons/16.png");
+  })
 });
 
 describe("copyPublic", () => {
@@ -954,7 +997,7 @@ describe("copyPublic", () => {
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
+    mock.restore();
     await rm(build.config.public, { recursive: true });
   });
 
@@ -1004,7 +1047,7 @@ describe("parse", () => {
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
+    mock.restore()
     await rm(build.config.public, { recursive: true });
   });
 
