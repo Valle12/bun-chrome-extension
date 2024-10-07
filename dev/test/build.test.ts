@@ -27,7 +27,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await rm(build.config.outdir, {recursive: true});
+  await rm(build.config.outdir, { recursive: true });
 })
 
 describe("extractPaths", () => {
@@ -979,7 +979,7 @@ describe("writeManifest", () => {
     const valuesArray = Array.from(build.fileToProperty.values())
     expect(valuesArray.includes("testPublic/icons/16.png")).toBeTrue();
     expect(Bun.write).toHaveBeenCalledTimes(3);
-    
+
     const content = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
     ).text();

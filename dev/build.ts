@@ -1,6 +1,6 @@
 import { exists, readdir } from "fs/promises";
 import { Parser } from "htmlparser2";
-import { dirname, extname, join, normalize, relative, resolve } from "path";
+import { dirname, extname, join, relative, resolve, win32 } from "path";
 import type {
   Attributes,
   BCEConfig,
@@ -48,7 +48,7 @@ export class Build {
       const icons = this.manifest.icons as Icons;
       for (const [key, value] of Object.entries(icons)) {
         if (!value) continue;
-        icons[key] = normalize(value);
+        icons[key] = win32.normalize(value).replace(/\\/g, "/")
       }
     }
 
@@ -56,7 +56,7 @@ export class Build {
       const icons = this.manifest.action.default_icon as Icons;
       for (const [key, value] of Object.entries(icons)) {
         if (!value) continue;
-        icons[key] = normalize(value);
+        icons[key] = win32.normalize(value).replace(/\\/g, "/")
       }
     }
   }
