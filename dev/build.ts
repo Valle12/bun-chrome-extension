@@ -1,18 +1,22 @@
 import { exists, readdir } from "fs/promises";
 import { Parser } from "htmlparser2";
-import { dirname, extname, join, relative, resolve } from "path";
+import { dirname, extname, join, relative, resolve, win32 } from "path";
 import type {
   Attributes,
   BCEConfig,
   FullManifest,
   HTMLType,
+  Icons,
   Properties,
 } from "./types";
 
 export class Build {
   manifest: FullManifest;
   config: Required<BCEConfig>;
+  // TODO potentially remove fileToProperty and set the contents of manifest in a different way
+  // Also check for specific icons or default icons instead of checking all paths
   fileToProperty: Map<string, string> = new Map();
+  cwd = process.cwd();
 
   constructor(manifest: FullManifest, config: BCEConfig = {}) {
     this.manifest = manifest;
@@ -20,8 +24,8 @@ export class Build {
     const defaultConfig: Required<BCEConfig> = {
       minify: true,
       sourcemap: "none",
-      outdir: resolve(process.cwd(), "dist"),
-      public: resolve(process.cwd(), "public"),
+      outdir: resolve(this.cwd, "dist"),
+      public: resolve(this.cwd, "public"),
     };
 
     this.config = {
@@ -33,9 +37,28 @@ export class Build {
   }
 
   async parse() {
+    await this.preprocessManifest();
     await this.parseManifest();
     await this.copyPublic();
     await this.writeManifest();
+  }
+
+  async preprocessManifest() {
+    if (this.manifest.icons) {
+      const icons = this.manifest.icons as Icons;
+      for (const [key, value] of Object.entries(icons)) {
+        if (!value) continue;
+        icons[key] = win32.normalize(value).replace(/\\/g, "/")
+      }
+    }
+
+    if (this.manifest.action && this.manifest.action.default_icon) {
+      const icons = this.manifest.action.default_icon as Icons;
+      for (const [key, value] of Object.entries(icons)) {
+        if (!value) continue;
+        icons[key] = win32.normalize(value).replace(/\\/g, "/")
+      }
+    }
   }
 
   async parseManifest() {
@@ -53,6 +76,7 @@ export class Build {
         entrypoints,
         minify: this.config.minify,
         outdir: this.config.outdir,
+        naming: "[dir]/[name]-[hash].[ext]",
       });
 
       const entrypointsLength = entrypoints.length;
@@ -274,30 +298,33 @@ export class Build {
     });
     for (const file of files) {
       if (file.isDirectory()) continue;
-      const filePath = resolve(this.config.public, file.parentPath, file.name);
-      const source = Bun.file(filePath);
-      const relativeFilePath = relative(this.config.public, filePath);
-      const joinedFile = join("public", relativeFilePath);
-      const outFile = resolve(this.config.outdir, joinedFile);
-      this.fileToProperty.set(filePath, joinedFile);
+      const filePath = join(relative(this.cwd, file.parentPath), file.name);
+      const filePathResolved = resolve(this.cwd, filePath);
+      const linuxFilePath = filePath.replaceAll(/\\/g, "/");
+      const resolvedLinuxFilePath = filePathResolved.replaceAll(/\\/g, "/");
+      const splitPublic = this.config.public.replaceAll(/\\/g, "/").split("/");
+      const publicDir =
+        splitPublic.length > 0
+          ? splitPublic[splitPublic.length - 1]
+          : this.config.public;
+      const outFile = resolve(
+        this.config.outdir,
+        publicDir,
+        relative(this.config.public, filePathResolved)
+      );
+      const source = Bun.file(resolvedLinuxFilePath);
+      this.fileToProperty.set(filePath, linuxFilePath);
+      this.fileToProperty.set(filePathResolved, linuxFilePath);
+      this.fileToProperty.set(linuxFilePath, linuxFilePath);
+      this.fileToProperty.set(resolvedLinuxFilePath, linuxFilePath);
       await Bun.write(outFile, source);
     }
   }
 
   async writeManifest() {
     const file = resolve(this.config.outdir, "manifest.json");
-    await this.resolvePathsInManifest(this.manifest);
-    let content = JSON.stringify(this.manifest, null, 2).replaceAll(
-      `"ts"`,
-      `"js"`
-    );
-
-    for (const [key, value] of this.fileToProperty) {
-      const replacedValue = value.replaceAll(/\\/g, "/");
-      const replacedKey = key.replaceAll(/\\/g, "\\\\");
-      content = content.replaceAll(replacedKey, replacedValue);
-    }
-
+    this.changeOutPathsInManifest(this.manifest);
+    const content = JSON.stringify(this.manifest, null, 2);
     await Bun.write(file, content);
   }
 
@@ -362,15 +389,19 @@ export class Build {
     return htmlFiles;
   }
 
-  private async resolvePathsInManifest(obj: any) {
+  private changeOutPathsInManifest(obj: any) {
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value === "object") {
-        await this.resolvePathsInManifest(value);
-      } else if (typeof value === "string" && extname(value) !== "") {
-        const file = resolve(this.config.public, "..", value);
-        const existsFile = await exists(file);
-        if (!existsFile) continue;
-        obj[key] = file;
+        if (typeof key === "string" && key === "ts") {
+          obj.js = value;
+          delete obj.ts;
+        } else {
+          this.changeOutPathsInManifest(value);
+        }
+      } else if (typeof value === "string" && extname(value)) {
+        const filePath = this.fileToProperty.get(value);
+        if (!filePath) continue;
+        obj[key] = filePath;
       }
     }
   }
