@@ -48,7 +48,7 @@ export class Build {
       const icons = this.manifest.icons as Icons;
       for (const [key, value] of Object.entries(icons)) {
         if (!value) continue;
-        icons[key] = win32.normalize(value).replace(/\\/g, "/")
+        icons[key] = win32.normalize(value).replace(/\\/g, "/");
       }
     }
 
@@ -56,7 +56,7 @@ export class Build {
       const icons = this.manifest.action.default_icon as Icons;
       for (const [key, value] of Object.entries(icons)) {
         if (!value) continue;
-        icons[key] = win32.normalize(value).replace(/\\/g, "/")
+        icons[key] = win32.normalize(value).replace(/\\/g, "/");
       }
     }
   }
@@ -78,6 +78,10 @@ export class Build {
         outdir: this.config.outdir,
         naming: "[dir]/[name]-[hash].[ext]",
       });
+
+      if (!result.success) {
+        console.error(result.logs);
+      }
 
       const entrypointsLength = entrypoints.length;
       for (let i = 0; i < entrypointsLength; i++) {

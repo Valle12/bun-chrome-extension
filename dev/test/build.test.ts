@@ -5,7 +5,7 @@ import {
   expect,
   spyOn,
   test,
-  mock
+  mock,
 } from "bun:test";
 import { mkdir, readdir, rm } from "fs/promises";
 import { join, relative, resolve } from "path";
@@ -28,7 +28,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await rm(build.config.outdir, { recursive: true });
-})
+});
 
 describe("extractPaths", () => {
   test("test with no additional config", () => {
@@ -457,7 +457,7 @@ describe("parseManifest", () => {
   });
 
   afterEach(() => {
-    mock.restore()
+    mock.restore();
   });
 
   test("test with no additional config", async () => {
@@ -516,11 +516,11 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: resolve(cwd, "test/resources/test1.ts"),
+        service_worker: join(cwd, "test/resources/test1.ts"),
       },
       content_scripts: [
         {
-          ts: [resolve(cwd, "test/resources/test2.ts")],
+          ts: [join(cwd, "test/resources/test2.ts")],
         },
       ],
     });
@@ -962,21 +962,21 @@ describe("writeManifest", () => {
     build.config.public = resolve(cwd, "testPublic");
     build.config.outdir = resolve(cwd, "out");
     await createTestPublicFolder(build.config.public, [
-      "test/resources/icons/16.png"
-    ])
+      "test/resources/icons/16.png",
+    ]);
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       icons: {
-        16: "testPublic/icons/16.png"
-      }
-    })
+        16: "testPublic/icons/16.png",
+      },
+    });
 
     await build.preprocessManifest();
     await build.copyPublic();
     await build.writeManifest();
 
-    const valuesArray = Array.from(build.fileToProperty.values())
+    const valuesArray = Array.from(build.fileToProperty.values());
     expect(valuesArray.includes("testPublic/icons/16.png")).toBeTrue();
     expect(Bun.write).toHaveBeenCalledTimes(3);
 
@@ -985,7 +985,7 @@ describe("writeManifest", () => {
     ).text();
     const manifest = JSON.parse(content);
     expect(manifest.icons["16"]).toBe("testPublic/icons/16.png");
-  })
+  });
 });
 
 describe("copyPublic", () => {
@@ -1047,7 +1047,7 @@ describe("parse", () => {
   });
 
   afterEach(async () => {
-    mock.restore()
+    mock.restore();
     await rm(build.config.public, { recursive: true });
   });
 
