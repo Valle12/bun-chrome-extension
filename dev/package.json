@@ -1,6 +1,6 @@
 {
   "name": "bun-chrome-extension-dev",
-  "version": "0.1.6",
+  "version": "0.1.9",
   "keywords": [
     "bun",
     "chrome",
@@ -21,13 +21,13 @@
     "build": "rm -rf dist && bunx tsc -p tsconfig-build.json"
   },
   "dependencies": {
-    "@types/chrome": "^0.0.269",
     "htmlparser2": "^9.1.0"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/chrome": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.5.4"
   }
 }
