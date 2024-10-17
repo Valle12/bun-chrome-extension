@@ -92,6 +92,12 @@ export type BCEConfig = Omit<
   | "define"
   | "loader"
   | "conditions"
+  | "ignoreDCEAnnotations"
+  | "emitDCEAnnotations"
+  | "bytecode"
+  | "banner"
+  | "footer"
+  | "experimentalCss"
 > & {
   public?: string;
 };
