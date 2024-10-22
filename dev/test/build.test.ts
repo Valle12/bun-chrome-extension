@@ -447,6 +447,27 @@ describe("extractPathsFromHTML", () => {
 
     await rm(tmp);
   });
+
+  test.only("test with script and link in html", async () => {
+    let content = await Bun.file(
+      resolve(cwd, "test/resources/popup-with-stylesheet.html")
+    ).text();
+    const tmp = resolve(cwd, "test/resources/tmp.html");
+    await Bun.write(tmp, content);
+
+    const properties: Map<Properties, boolean> = new Map();
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      action: {
+        default_popup: tmp,
+      },
+    });
+
+    const htmlTypes = await build.extractPathsFromHTML(properties);
+
+    await rm(tmp);
+  });
 });
 
 describe("parseManifest", () => {

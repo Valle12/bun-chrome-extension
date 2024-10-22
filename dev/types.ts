@@ -67,6 +67,7 @@ export type HTMLType = {
 
 export type Attributes = {
   src: string;
+  href: string;
 };
 
 export type Properties =
