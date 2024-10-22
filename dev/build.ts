@@ -430,10 +430,10 @@ export class Build {
 
           if (type.resolvedScripts && type.scripts) {
             type.resolvedScripts.push(href);
-            type.scripts.push(href);
+            type.scripts.push(attributes.href);
           } else {
             type.resolvedScripts = [href];
-            type.scripts = [href];
+            type.scripts = [attributes.href];
           }
         }
       },
