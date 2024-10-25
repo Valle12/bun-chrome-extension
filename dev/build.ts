@@ -415,15 +415,26 @@ export class Build {
     const content = await Bun.file(file).text();
     const parser = new Parser({
       onopentag(name, attributes: Attributes) {
-        if (name !== "script") return;
-        const src = resolve(file, "..", attributes.src);
+        if (name === "script") {
+          const src = resolve(file, "..", attributes.src);
 
-        if (type.resolvedScripts && type.scripts) {
-          type.resolvedScripts.push(src);
-          type.scripts.push(attributes.src);
-        } else {
-          type.resolvedScripts = [src];
-          type.scripts = [attributes.src];
+          if (type.resolvedScripts && type.scripts) {
+            type.resolvedScripts.push(src);
+            type.scripts.push(attributes.src);
+          } else {
+            type.resolvedScripts = [src];
+            type.scripts = [attributes.src];
+          }
+        } else if (name === "link") {
+          const href = resolve(file, "..", attributes.href);
+
+          if (type.resolvedScripts && type.scripts) {
+            type.resolvedScripts.push(href);
+            type.scripts.push(attributes.href);
+          } else {
+            type.resolvedScripts = [href];
+            type.scripts = [attributes.href];
+          }
         }
       },
     });

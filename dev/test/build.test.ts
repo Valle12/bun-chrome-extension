@@ -447,6 +447,44 @@ describe("extractPathsFromHTML", () => {
 
     await rm(tmp);
   });
+
+  test("test with script and link in html", async () => {
+    let content = await Bun.file(
+      resolve(cwd, "test/resources/popup-with-stylesheet.html")
+    ).text();
+    const tmp = resolve(cwd, "test/resources/tmp.html");
+    await Bun.write(tmp, content);
+
+    const properties: Map<Properties, boolean> = new Map();
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      action: {
+        default_popup: tmp,
+      },
+    });
+
+    const htmlTypes = await build.extractPathsFromHTML(properties);
+
+    expect(properties.get("action.default_popup")).toBeTrue();
+    expect(htmlTypes.length).toBe(1);
+    expect(htmlTypes[0].property).toBe("action.default_popup");
+    expect(htmlTypes[0].scripts?.length).toBe(2);
+    expect(htmlTypes[0].resolvedScripts?.length).toBe(2);
+    if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
+    expect(htmlTypes[0].scripts[0]).toBe("test1.css");
+    expect(htmlTypes[0].scripts[1]).toBe("test3.ts");
+    if (!htmlTypes[0].resolvedScripts)
+      throw new Error("resolvedScripts is undefined");
+    expect(htmlTypes[0].resolvedScripts[0]).toBe(
+      resolve(cwd, "test/resources/test1.css")
+    );
+    expect(htmlTypes[0].resolvedScripts[1]).toBe(
+      resolve(cwd, "test/resources/test3.ts")
+    );
+
+    await rm(tmp);
+  });
 });
 
 describe("parseManifest", () => {
@@ -610,6 +648,25 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledTimes(1);
+    expect(build.manifest.action?.default_popup).toContain("popup-");
+  });
+
+  test("test with popup with script and link tags", async () => {
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      action: {
+        default_popup: resolve(
+          cwd,
+          "test/resources/popup-with-stylesheet.html"
+        ),
+      },
+    });
+
+    await build.parseManifest();
+
+    expect(Bun.build).toHaveBeenCalledTimes(1);
+    expect(Bun.write).toHaveBeenCalledTimes(2);
     expect(build.manifest.action?.default_popup).toContain("popup-");
   });
 
