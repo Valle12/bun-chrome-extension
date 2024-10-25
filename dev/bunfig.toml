@@ -1,4 +1,0 @@
-preload = ["./plugins/sassCompiler.ts"]
-
-[test]
-preload = ["./plugins/sassCompiler.ts"]

@@ -472,12 +472,12 @@ describe("extractPathsFromHTML", () => {
     expect(htmlTypes[0].scripts?.length).toBe(2);
     expect(htmlTypes[0].resolvedScripts?.length).toBe(2);
     if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe("test1.scss");
+    expect(htmlTypes[0].scripts[0]).toBe("test1.css");
     expect(htmlTypes[0].scripts[1]).toBe("test3.ts");
     if (!htmlTypes[0].resolvedScripts)
       throw new Error("resolvedScripts is undefined");
     expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test1.scss")
+      resolve(cwd, "test/resources/test1.css")
     );
     expect(htmlTypes[0].resolvedScripts[1]).toBe(
       resolve(cwd, "test/resources/test3.ts")
