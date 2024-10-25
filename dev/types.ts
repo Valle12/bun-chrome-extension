@@ -68,6 +68,7 @@ export type HTMLType = {
 export type Attributes = {
   src: string;
   href: string;
+  rel: "stylesheet" | "preconnect";
 };
 
 export type Properties =

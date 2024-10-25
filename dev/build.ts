@@ -425,7 +425,11 @@ export class Build {
             type.resolvedScripts = [src];
             type.scripts = [attributes.src];
           }
-        } else if (name === "link") {
+        } else if (
+          name === "link" &&
+          attributes.rel === "stylesheet" &&
+          !attributes.href.includes("http")
+        ) {
           const href = resolve(file, "..", attributes.href);
 
           if (type.resolvedScripts && type.scripts) {
