@@ -230,6 +230,14 @@ describe("extractPaths", () => {
 });
 
 describe("extractPathsFromHTML", () => {
+  beforeEach(async () => {
+    await rm(build.config.outdir, { recursive: true });
+  });
+
+  afterEach(async () => {
+    await rm(build.config.outdir, { recursive: true });
+  });
+
   test("test with no additional config", async () => {
     const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
@@ -469,19 +477,18 @@ describe("extractPathsFromHTML", () => {
     expect(properties.get("action.default_popup")).toBeTrue();
     expect(htmlTypes.length).toBe(1);
     expect(htmlTypes[0].property).toBe("action.default_popup");
-    expect(htmlTypes[0].scripts?.length).toBe(2);
-    expect(htmlTypes[0].resolvedScripts?.length).toBe(2);
+    expect(htmlTypes[0].scripts?.length).toBe(1);
+    expect(htmlTypes[0].resolvedScripts?.length).toBe(1);
     if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe("test1.css");
-    expect(htmlTypes[0].scripts[1]).toBe("test3.ts");
+    expect(htmlTypes[0].scripts[0]).toBe("test3.ts");
     if (!htmlTypes[0].resolvedScripts)
       throw new Error("resolvedScripts is undefined");
     expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test1.css")
-    );
-    expect(htmlTypes[0].resolvedScripts[1]).toBe(
       resolve(cwd, "test/resources/test3.ts")
     );
+
+    const files = await readdir(build.config.outdir, { recursive: true });
+    expect(files.length).toBe(1);
 
     await rm(tmp);
   });

@@ -411,12 +411,13 @@ export class Build {
   }
 
   private async parseHTML(type: HTMLType) {
-    const cwd = this.cwd;
     const outDir = this.config.outdir;
     const file = resolve(type.originalURL);
     const content = await Bun.file(file).text();
+    const promises: Promise<number>[] = [];
+
     const parser = new Parser({
-      async onopentag(name, attributes: Attributes) {
+      onopentag(name, attributes: Attributes) {
         if (name === "script") {
           const src = resolve(file, "..", attributes.src);
 
@@ -433,12 +434,14 @@ export class Build {
           !attributes.href.includes("http")
         ) {
           const href = resolve(file, "..", attributes.href);
-          const outFile = join(outDir, relative(cwd, href));
-          await Bun.write(outFile, Bun.file(href));
+          const outFile = join(outDir, attributes.href);
+          promises.push(Bun.write(outFile, Bun.file(href)));
         }
       },
     });
     parser.write(content);
     parser.end();
+
+    await Promise.all(promises);
   }
 }
