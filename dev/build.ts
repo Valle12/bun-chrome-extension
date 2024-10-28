@@ -411,10 +411,12 @@ export class Build {
   }
 
   private async parseHTML(type: HTMLType) {
+    const cwd = this.cwd;
+    const outDir = this.config.outdir;
     const file = resolve(type.originalURL);
     const content = await Bun.file(file).text();
     const parser = new Parser({
-      onopentag(name, attributes: Attributes) {
+      async onopentag(name, attributes: Attributes) {
         if (name === "script") {
           const src = resolve(file, "..", attributes.src);
 
@@ -431,14 +433,8 @@ export class Build {
           !attributes.href.includes("http")
         ) {
           const href = resolve(file, "..", attributes.href);
-
-          if (type.resolvedScripts && type.scripts) {
-            type.resolvedScripts.push(href);
-            type.scripts.push(attributes.href);
-          } else {
-            type.resolvedScripts = [href];
-            type.scripts = [attributes.href];
-          }
+          const outFile = join(outDir, relative(cwd, href));
+          await Bun.write(outFile, Bun.file(href));
         }
       },
     });
