@@ -62,8 +62,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dev
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_PAT }}
 
       - name: Log workspace
         run: cd ${{ github.workspace }} && ls -r
