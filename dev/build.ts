@@ -1,14 +1,6 @@
 import { exists, readdir } from "fs/promises";
-import { Parser } from "htmlparser2";
-import { dirname, extname, join, relative, resolve, win32 } from "path";
-import type {
-  Attributes,
-  BCEConfig,
-  FullManifest,
-  HTMLType,
-  Icons,
-  Properties,
-} from "./types";
+import { basename, extname, join, relative, resolve, win32 } from "path";
+import type { BCEConfig, FullManifest, Icons, Properties } from "./types";
 
 export class Build {
   manifest: FullManifest;
@@ -64,12 +56,6 @@ export class Build {
   async parseManifest() {
     const properties: Map<Properties, boolean> = new Map();
     const entrypoints = this.extractPaths(properties);
-    const htmlTypes = await this.extractPathsFromHTML(properties);
-    for (const type of htmlTypes) {
-      entrypoints.push(resolve(type.originalURL));
-      if (!type.resolvedScripts) continue;
-      entrypoints.push(...type.resolvedScripts);
-    }
 
     if (entrypoints.length !== 0) {
       const result = await Bun.build({
@@ -79,12 +65,100 @@ export class Build {
         naming: "[dir]/[name]-[hash].[ext]",
       });
 
-      if (!result.success) {
-        console.error(result.logs);
-      }
-
       const entrypointsLength = entrypoints.length;
       for (let i = 0; i < entrypointsLength; i++) {
+        if (
+          properties.get("action.default_popup") &&
+          this.manifest.action &&
+          this.manifest.action.default_popup
+        ) {
+          let file: string;
+          const reference = this.manifest.action.default_popup;
+          const property = this.fileToProperty.get(reference);
+          if (property) {
+            file = property;
+          } else {
+            const popupBase = basename(this.manifest.action.default_popup);
+            const popup = popupBase.substring(0, popupBase.indexOf(".html"));
+            let build = result.outputs.shift();
+            while (build && !build.path.includes(popup)) {
+              build = result.outputs.shift();
+            }
+            if (!build) break;
+            file = build.path;
+            this.fileToProperty.set(reference, file);
+          }
+          const relativeFilePath = relative(
+            this.config.outdir,
+            file
+          ).replaceAll(/\\/g, "/");
+          this.manifest.action.default_popup = relativeFilePath;
+          properties.set("action.default_popup", false);
+          continue;
+        }
+
+        if (properties.get("options_page") && this.manifest.options_page) {
+          let file: string;
+          const reference = this.manifest.options_page;
+          const property = this.fileToProperty.get(reference);
+          if (property) {
+            file = property;
+          } else {
+            const optionsBase = basename(this.manifest.options_page);
+            const options = optionsBase.substring(
+              0,
+              optionsBase.indexOf(".html")
+            );
+            let build = result.outputs.shift();
+            while (build && !build.path.includes(options)) {
+              build = result.outputs.shift();
+            }
+            if (!build) break;
+            file = build.path;
+            this.fileToProperty.set(reference, file);
+          }
+          const relativeFilePath = relative(
+            this.config.outdir,
+            file
+          ).replaceAll(/\\/g, "/");
+          this.manifest.options_page = relativeFilePath;
+          properties.set("options_page", false);
+          continue;
+        }
+
+        if (
+          properties.get("options_ui.page") &&
+          this.manifest.options_ui &&
+          this.manifest.options_ui.page
+        ) {
+          let file: string;
+          const reference = this.manifest.options_ui.page;
+          const property = this.fileToProperty.get(reference);
+          if (property) {
+            file = property;
+          } else {
+            const optionsUiBase = basename(this.manifest.options_ui.page);
+            const optionsUi = optionsUiBase.substring(
+              0,
+              optionsUiBase.indexOf(".html")
+            );
+            let build = result.outputs.shift();
+            while (build && !build.path.includes(optionsUi)) {
+              build = result.outputs.shift();
+            }
+            if (!build) break;
+            file = build.path;
+            this.fileToProperty.set(reference, file);
+          }
+          const relativeFilePath = relative(
+            this.config.outdir,
+            file
+          ).replaceAll(/\\/g, "/");
+          this.manifest.options_ui.page = relativeFilePath;
+          properties.set("options_ui.page", false);
+          continue;
+        }
+
         if (
           properties.get("background.service_worker") &&
           this.manifest.background
@@ -136,158 +210,6 @@ export class Build {
             }
           }
           properties.set("content_scripts.ts", false);
-          continue;
-        }
-
-        if (
-          properties.get("action.default_popup") &&
-          this.manifest.action &&
-          this.manifest.action.default_popup
-        ) {
-          let file: string;
-          const reference = this.manifest.action.default_popup;
-          const property = this.fileToProperty.get(reference);
-          const build = result.outputs.shift();
-          if (!build) break;
-          if (property) {
-            file = property;
-          } else {
-            const newHTML = await import(build.path);
-            file = resolve(dirname(build.path), newHTML.default);
-            this.fileToProperty.set(reference, file);
-          }
-          let content = await Bun.file(file).text();
-          const type = htmlTypes.shift();
-          if (!type) break;
-          const scripts = type.scripts;
-          const resolvedScripts = type.resolvedScripts;
-          if (!scripts || !resolvedScripts) break;
-          for (let j = 0; j < scripts.length; j++) {
-            const script = scripts[j];
-            const property = this.fileToProperty.get(resolvedScripts[j]);
-            let resolvedScript: string;
-            let relativeFilePath: string;
-            if (property) {
-              relativeFilePath = property;
-            } else {
-              const buildResolved = result.outputs.shift();
-              if (!buildResolved) break;
-              resolvedScript = buildResolved.path;
-              relativeFilePath = relative(
-                this.config.outdir,
-                resolvedScript
-              ).replaceAll(/\\/g, "/");
-              this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
-            }
-            content = content.replaceAll(script, relativeFilePath);
-            await Bun.write(file, content);
-          }
-          const relativeFilePath = relative(
-            this.config.outdir,
-            file
-          ).replaceAll(/\\/g, "/");
-          this.manifest.action.default_popup = relativeFilePath;
-          properties.set("action.default_popup", false);
-          continue;
-        }
-
-        if (properties.get("options_page") && this.manifest.options_page) {
-          let file: string;
-          const reference = this.manifest.options_page;
-          const property = this.fileToProperty.get(reference);
-          const build = result.outputs.shift();
-          if (!build) break;
-          if (property) {
-            file = property;
-          } else {
-            const newHTML = await import(build.path);
-            file = resolve(dirname(build.path), newHTML.default);
-            this.fileToProperty.set(reference, file);
-          }
-          let content = await Bun.file(file).text();
-          const type = htmlTypes.shift();
-          if (!type) break;
-          const scripts = type.scripts;
-          const resolvedScripts = type.resolvedScripts;
-          if (!scripts || !resolvedScripts) break;
-          for (let j = 0; j < scripts.length; j++) {
-            const script = scripts[j];
-            const property = this.fileToProperty.get(resolvedScripts[j]);
-            let resolvedScript: string;
-            let relativeFilePath: string;
-            if (property) {
-              relativeFilePath = property;
-            } else {
-              const buildResolved = result.outputs.shift();
-              if (!buildResolved) break;
-              resolvedScript = buildResolved.path;
-              relativeFilePath = relative(
-                this.config.outdir,
-                resolvedScript
-              ).replaceAll(/\\/g, "/");
-              this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
-            }
-            content = content.replaceAll(script, relativeFilePath);
-            await Bun.write(file, content);
-          }
-          const relativeFilePath = relative(
-            this.config.outdir,
-            file
-          ).replaceAll(/\\/g, "/");
-          this.manifest.options_page = relativeFilePath;
-          properties.set("options_page", false);
-          continue;
-        }
-
-        if (
-          properties.get("options_ui.page") &&
-          this.manifest.options_ui &&
-          this.manifest.options_ui.page
-        ) {
-          let file: string;
-          const reference = this.manifest.options_ui.page;
-          const property = this.fileToProperty.get(reference);
-          const build = result.outputs.shift();
-          if (!build) break;
-          if (property) {
-            file = property;
-          } else {
-            const newHTML = await import(build.path);
-            file = resolve(dirname(build.path), newHTML.default);
-            this.fileToProperty.set(reference, file);
-          }
-          let content = await Bun.file(file).text();
-          const type = htmlTypes.shift();
-          if (!type) break;
-          const scripts = type.scripts;
-          const resolvedScripts = type.resolvedScripts;
-          if (!scripts || !resolvedScripts) break;
-          for (let j = 0; j < scripts.length; j++) {
-            const script = scripts[j];
-            const property = this.fileToProperty.get(resolvedScripts[j]);
-            let resolvedScript: string;
-            let relativeFilePath: string;
-            if (property) {
-              relativeFilePath = property;
-            } else {
-              const buildResolved = result.outputs.shift();
-              if (!buildResolved) break;
-              resolvedScript = buildResolved.path;
-              relativeFilePath = relative(
-                this.config.outdir,
-                resolvedScript
-              ).replaceAll(/\\/g, "/");
-              this.fileToProperty.set(resolvedScripts[j], relativeFilePath);
-            }
-            content = content.replaceAll(script, relativeFilePath);
-            await Bun.write(file, content);
-          }
-          const relativeFilePath = relative(
-            this.config.outdir,
-            file
-          ).replaceAll(/\\/g, "/");
-          this.manifest.options_ui.page = relativeFilePath;
-          properties.set("options_ui.page", false);
           continue;
         }
       }
@@ -354,43 +276,28 @@ export class Build {
       properties.set("content_scripts.ts", true);
     }
 
-    return paths;
-  }
-
-  async extractPathsFromHTML(properties: Map<Properties, boolean>) {
-    const htmlFiles: HTMLType[] = [];
-
     if (this.manifest.action && this.manifest.action.default_popup) {
-      const type: HTMLType = {
-        originalURL: this.manifest.action.default_popup,
-        property: "action.default_popup",
-      };
-      await this.parseHTML(type);
-      htmlFiles.push(type);
+      const file = resolve(this.manifest.action.default_popup);
+      this.manifest.action.default_popup = file;
+      paths.push(file);
       properties.set("action.default_popup", true);
     }
 
     if (this.manifest.options_page) {
-      const type: HTMLType = {
-        originalURL: this.manifest.options_page,
-        property: "options_page",
-      };
-      await this.parseHTML(type);
-      htmlFiles.push(type);
+      const file = resolve(this.manifest.options_page);
+      this.manifest.options_page = file;
+      paths.push(file);
       properties.set("options_page", true);
     }
 
     if (this.manifest.options_ui && this.manifest.options_ui.page) {
-      const type: HTMLType = {
-        originalURL: this.manifest.options_ui.page,
-        property: "options_ui.page",
-      };
-      await this.parseHTML(type);
-      htmlFiles.push(type);
+      const file = resolve(this.manifest.options_ui.page);
+      this.manifest.options_ui.page = file;
+      paths.push(file);
       properties.set("options_ui.page", true);
     }
 
-    return htmlFiles;
+    return paths;
   }
 
   private changeOutPathsInManifest(obj: any) {
@@ -408,40 +315,5 @@ export class Build {
         obj[key] = filePath;
       }
     }
-  }
-
-  private async parseHTML(type: HTMLType) {
-    const outDir = this.config.outdir;
-    const file = resolve(type.originalURL);
-    const content = await Bun.file(file).text();
-    const promises: Promise<number>[] = [];
-
-    const parser = new Parser({
-      onopentag(name, attributes: Attributes) {
-        if (name === "script") {
-          const src = resolve(file, "..", attributes.src);
-
-          if (type.resolvedScripts && type.scripts) {
-            type.resolvedScripts.push(src);
-            type.scripts.push(attributes.src);
-          } else {
-            type.resolvedScripts = [src];
-            type.scripts = [attributes.src];
-          }
-        } else if (
-          name === "link" &&
-          attributes.rel === "stylesheet" &&
-          !attributes.href.includes("http")
-        ) {
-          const href = resolve(file, "..", attributes.href);
-          const outFile = join(outDir, attributes.href);
-          promises.push(Bun.write(outFile, Bun.file(href)));
-        }
-      },
-    });
-    parser.write(content);
-    parser.end();
-
-    await Promise.all(promises);
   }
 }
