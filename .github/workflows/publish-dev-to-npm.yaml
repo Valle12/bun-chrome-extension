@@ -43,6 +43,7 @@ jobs:
           skip-tag: true
           commit-message: "Bump ${{ inputs.version }} version of dev"
           bump-policy: "ignore"
+          target-branch: "version"
         env:
           PACKAGEJSON_DIR: "dev"
 
