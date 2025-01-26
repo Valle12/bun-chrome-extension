@@ -3,7 +3,7 @@ name: Create dev package and upload to GitHub
 on:
   push:
     branches: master
-    paths: "dev/**"
+    paths: ["dev/**", ".github/workflows/create-dev-package-yaml"]
 
 defaults:
   run:
@@ -36,5 +36,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dev
-          path: bun-chrome-extension-dev-*.tgz
+          path: bun-chrome-extension-dev-**.tgz
           if-no-files-found: error
+          overwrite: true
