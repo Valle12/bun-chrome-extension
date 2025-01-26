@@ -53,11 +53,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Merge PR
+        run: gh pr merge version -d
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Download package
         uses: actions/download-artifact@v4
         with:
           name: dev
-          github-token: ${{ secrets.GITHUB_TOKEN}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log workspace
         run: cd ${{ github.workspace }} && ls -r
