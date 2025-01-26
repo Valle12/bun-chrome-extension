@@ -20,6 +20,7 @@ defaults:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -33,6 +34,8 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          registry-url: "https://registry.npmjs.org"
 
       - name: Create version-dev branch
         run: git checkout -b version-dev
