@@ -36,4 +36,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dev
-          path: ./bun-chrome-extension-dev-*.tgz
+          path: bun-chrome-extension-dev-*.tgz
+          if-no-files-found: error
