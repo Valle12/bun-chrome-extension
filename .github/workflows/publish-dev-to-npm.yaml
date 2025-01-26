@@ -49,7 +49,7 @@ jobs:
           PACKAGEJSON_DIR: "dev"
 
       - name: PR to main
-        run: gh pr create -B master -H version --no-maintainer-edit
+        run: gh pr create -B master -H version -t "Bump version" -b "New version" --no-maintainer-edit
 
       - name: Download package
         uses: actions/download-artifact@v4
