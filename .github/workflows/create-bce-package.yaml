@@ -26,6 +26,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bce
-          path: bun-chrome-extension-**.tgz
+          path: bun-chrome-extension-*.tgz
           if-no-files-found: error
           overwrite: true
