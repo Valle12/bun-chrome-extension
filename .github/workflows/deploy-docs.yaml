@@ -5,8 +5,6 @@ on:
     branches: [master]
     paths: "docs/**"
 
-  workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
@@ -48,7 +46,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
-    name: Deploy
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

@@ -1,0 +1,29 @@
+name: Create bce package and upload to GitHub
+
+on:
+  push:
+    branches: master
+    paths-ignore: ["dev/**", "docs/**", ".vscode/**"]
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Create package
+        run: bun pm pack
+
+  upload:
+    runs-on: ubuntu-latest
+    needs: create
+    steps:
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: bce
+          path: ./bun-chrome-extension-*.tgz

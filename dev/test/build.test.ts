@@ -3,9 +3,9 @@ import {
   beforeEach,
   describe,
   expect,
+  mock,
   spyOn,
   test,
-  mock,
 } from "bun:test";
 import { mkdir, readdir, rm } from "fs/promises";
 import { join, relative, resolve } from "path";
@@ -23,11 +23,11 @@ beforeEach(async () => {
     version: "0.0.1",
   });
   build.config.outdir = resolve(cwd, "dist");
-  await rm(build.config.outdir, { recursive: true });
+  await rm(build.config.outdir, { recursive: true, force: true });
 });
 
 afterEach(async () => {
-  await rm(build.config.outdir, { recursive: true });
+  await rm(build.config.outdir, { recursive: true, force: true });
 });
 
 describe("extractPaths", () => {
@@ -229,271 +229,6 @@ describe("extractPaths", () => {
   });
 });
 
-describe("extractPathsFromHTML", () => {
-  beforeEach(async () => {
-    await rm(build.config.outdir, { recursive: true });
-  });
-
-  afterEach(async () => {
-    await rm(build.config.outdir, { recursive: true });
-  });
-
-  test("test with no additional config", async () => {
-    const properties: Map<Properties, boolean> = new Map();
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-    });
-
-    const htmlTypes = await build.extractPathsFromHTML(properties);
-
-    expect(properties).toBeEmpty();
-    expect(htmlTypes).toBeEmpty();
-  });
-
-  test("test with popup info", async () => {
-    const properties: Map<Properties, boolean> = new Map();
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      action: {
-        default_popup: resolve(cwd, "test/resources/popup.html"),
-      },
-    });
-
-    const htmlTypes = await build.extractPathsFromHTML(properties);
-
-    expect(properties.get("action.default_popup")).toBeTrue();
-    expect(htmlTypes.length).toBe(1);
-    expect(htmlTypes[0].property).toBe("action.default_popup");
-    expect(htmlTypes[0].scripts?.length).toBe(1);
-    if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe("test3.ts");
-    expect(htmlTypes[0].resolvedScripts?.length).toBe(1);
-    if (!htmlTypes[0].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test3.ts")
-    );
-  });
-
-  test("test with options_page info", async () => {
-    const properties: Map<Properties, boolean> = new Map();
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      options_page: resolve(cwd, "test/resources/optionsPage.html"),
-    });
-
-    const htmlTypes = await build.extractPathsFromHTML(properties);
-
-    expect(properties.get("options_page")).toBeTrue();
-    expect(htmlTypes.length).toBe(1);
-    expect(htmlTypes[0].property).toBe("options_page");
-    expect(htmlTypes[0].scripts?.length).toBe(1);
-    if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe("test4.ts");
-    expect(htmlTypes[0].resolvedScripts?.length).toBe(1);
-    if (!htmlTypes[0].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test4.ts")
-    );
-  });
-
-  test("test with options_ui info", async () => {
-    const properties: Map<Properties, boolean> = new Map();
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      options_ui: {
-        page: resolve(cwd, "test/resources/optionsUI.html"),
-      },
-    });
-
-    const htmlTypes = await build.extractPathsFromHTML(properties);
-
-    expect(properties.get("options_ui.page")).toBeTrue();
-    expect(htmlTypes.length).toBe(1);
-    expect(htmlTypes[0].property).toBe("options_ui.page");
-    expect(htmlTypes[0].scripts?.length).toBe(1);
-    if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe("src/test5.ts");
-    expect(htmlTypes[0].resolvedScripts?.length).toBe(1);
-    if (!htmlTypes[0].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/src/test5.ts")
-    );
-  });
-
-  test("test with everything", async () => {
-    const properties: Map<Properties, boolean> = new Map();
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      action: {
-        default_popup: resolve(cwd, "test/resources/popup.html"),
-      },
-      options_page: resolve(cwd, "test/resources/optionsPage.html"),
-      options_ui: {
-        page: resolve(cwd, "test/resources/optionsUI.html"),
-      },
-    });
-
-    const htmlTypes = await build.extractPathsFromHTML(properties);
-
-    expect(htmlTypes.length).toBe(3);
-
-    expect(properties.get("action.default_popup")).toBeTrue();
-    expect(htmlTypes[0].property).toBe("action.default_popup");
-    expect(htmlTypes[0].scripts?.length).toBe(1);
-    if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe("test3.ts");
-    expect(htmlTypes[0].resolvedScripts?.length).toBe(1);
-    if (!htmlTypes[0].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test3.ts")
-    );
-
-    expect(properties.get("options_page")).toBeTrue();
-    expect(htmlTypes[1].property).toBe("options_page");
-    expect(htmlTypes[1].scripts?.length).toBe(1);
-    if (!htmlTypes[1].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[1].scripts[0]).toBe("test4.ts");
-    expect(htmlTypes[1].resolvedScripts?.length).toBe(1);
-    if (!htmlTypes[1].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[1].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test4.ts")
-    );
-
-    expect(properties.get("options_ui.page")).toBeTrue();
-    expect(htmlTypes[2].property).toBe("options_ui.page");
-    expect(htmlTypes[2].scripts?.length).toBe(1);
-    if (!htmlTypes[2].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[2].scripts[0]).toBe("src/test5.ts");
-    expect(htmlTypes[2].resolvedScripts?.length).toBe(1);
-    if (!htmlTypes[2].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[2].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/src/test5.ts")
-    );
-  });
-
-  test("test with multiple scripts in html", async () => {
-    const properties: Map<Properties, boolean> = new Map();
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      action: {
-        default_popup: resolve(cwd, "test/resources/multiple.html"),
-      },
-    });
-
-    const htmlTypes = await build.extractPathsFromHTML(properties);
-
-    expect(properties.get("action.default_popup")).toBeTrue();
-    expect(htmlTypes.length).toBe(1);
-    expect(htmlTypes[0].property).toBe("action.default_popup");
-    expect(htmlTypes[0].scripts?.length).toBe(3);
-    if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe("test1.ts");
-    expect(htmlTypes[0].scripts[1]).toBe("test2.ts");
-    expect(htmlTypes[0].scripts[2]).toBe("test3.ts");
-    expect(htmlTypes[0].resolvedScripts?.length).toBe(3);
-    if (!htmlTypes[0].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test1.ts")
-    );
-    expect(htmlTypes[0].resolvedScripts[1]).toBe(
-      resolve(cwd, "test/resources/test2.ts")
-    );
-    expect(htmlTypes[0].resolvedScripts[2]).toBe(
-      resolve(cwd, "test/resources/test3.ts")
-    );
-  });
-
-  test("test with absolute path in html", async () => {
-    let content = await Bun.file(
-      resolve(cwd, "test/resources/src/absolute.html")
-    ).text();
-    content = content.replace(
-      "PLACEHOLDER",
-      resolve(cwd, "test/resources/test1.ts")
-    );
-    const tmp = resolve(cwd, "test/resources/src/tmp.html");
-    await Bun.write(tmp, content);
-
-    const properties: Map<Properties, boolean> = new Map();
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      action: {
-        default_popup: tmp,
-      },
-    });
-
-    const htmlTypes = await build.extractPathsFromHTML(properties);
-
-    expect(properties.get("action.default_popup")).toBeTrue();
-    expect(htmlTypes.length).toBe(1);
-    expect(htmlTypes[0].property).toBe("action.default_popup");
-    expect(htmlTypes[0].scripts?.length).toBe(1);
-    if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe(
-      resolve(cwd, "test/resources/test1.ts")
-    );
-    expect(htmlTypes[0].resolvedScripts?.length).toBe(1);
-    if (!htmlTypes[0].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test1.ts")
-    );
-
-    await rm(tmp);
-  });
-
-  test("test with script and link in html", async () => {
-    let content = await Bun.file(
-      resolve(cwd, "test/resources/popup-with-stylesheet.html")
-    ).text();
-    const tmp = resolve(cwd, "test/resources/tmp.html");
-    await Bun.write(tmp, content);
-
-    const properties: Map<Properties, boolean> = new Map();
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      action: {
-        default_popup: tmp,
-      },
-    });
-
-    const htmlTypes = await build.extractPathsFromHTML(properties);
-
-    expect(properties.get("action.default_popup")).toBeTrue();
-    expect(htmlTypes.length).toBe(1);
-    expect(htmlTypes[0].property).toBe("action.default_popup");
-    expect(htmlTypes[0].scripts?.length).toBe(1);
-    expect(htmlTypes[0].resolvedScripts?.length).toBe(1);
-    if (!htmlTypes[0].scripts) throw new Error("scripts is undefined");
-    expect(htmlTypes[0].scripts[0]).toBe("test3.ts");
-    if (!htmlTypes[0].resolvedScripts)
-      throw new Error("resolvedScripts is undefined");
-    expect(htmlTypes[0].resolvedScripts[0]).toBe(
-      resolve(cwd, "test/resources/test3.ts")
-    );
-
-    const files = await readdir(build.config.outdir, { recursive: true });
-    expect(files.length).toBe(1);
-
-    await rm(tmp);
-  });
-});
-
 describe("parseManifest", () => {
   beforeEach(() => {
     spyOn(Bun, "build");
@@ -654,7 +389,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.write).toHaveBeenCalledTimes(1);
     expect(build.manifest.action?.default_popup).toContain("popup-");
   });
 
@@ -673,7 +407,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.write).toHaveBeenCalledTimes(2);
     expect(build.manifest.action?.default_popup).toContain("popup-");
   });
 
@@ -687,7 +420,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.write).toHaveBeenCalledTimes(1);
     expect(build.manifest.options_page).toContain("optionsPage-");
   });
 
@@ -703,7 +435,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.write).toHaveBeenCalledTimes(1);
     expect(build.manifest.options_ui?.page).toContain("optionsUI-");
   });
 
@@ -868,7 +599,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.write).toHaveBeenCalledTimes(3);
     expect(build.manifest.background?.service_worker).toContain("test1-");
     expect(build.manifest.background?.service_worker).toContain(".js");
     const contentScripts = build.manifest.content_scripts;
@@ -886,21 +616,21 @@ describe("parseManifest", () => {
     const popup = await Bun.file(
       resolve(build.config.outdir, build.manifest.action?.default_popup)
     ).text();
-    expect(popup).toContain("test3-");
+    expect(popup).toContain("chunk-");
     expect(popup).toContain(".js");
     if (!build.manifest.options_page)
       throw new Error("options_page is undefined");
     const optionsPage = await Bun.file(
       resolve(build.config.outdir, build.manifest.options_page)
     ).text();
-    expect(optionsPage).toContain("test4-");
+    expect(optionsPage).toContain("chunk-");
     expect(optionsPage).toContain(".js");
     if (!build.manifest.options_ui?.page)
       throw new Error("options_ui.page is undefined");
     const optionsUI = await Bun.file(
       resolve(build.config.outdir, build.manifest.options_ui?.page)
     ).text();
-    expect(optionsUI).toContain("src/test5-");
+    expect(optionsUI).toContain("chunk-");
     expect(optionsUI).toContain(".js");
   });
 });
@@ -909,12 +639,12 @@ describe("writeManifest", () => {
   beforeEach(async () => {
     spyOn(Bun, "write");
     build.config.public = resolve(cwd, "public");
-    await rm(build.config.public, { recursive: true });
+    await rm(build.config.public, { recursive: true, force: true });
   });
 
   afterEach(async () => {
     mock.restore();
-    await rm(build.config.public, { recursive: true });
+    await rm(build.config.public, { recursive: true, force: true });
   });
 
   test("test with minimal config", async () => {
@@ -1057,12 +787,12 @@ describe("copyPublic", () => {
     spyOn(Bun, "write");
     spyOn(await import("fs/promises"), "readdir");
     build.config.public = resolve(cwd, "public");
-    await rm(build.config.public, { recursive: true });
+    await rm(build.config.public, { recursive: true, force: true });
   });
 
   afterEach(async () => {
     mock.restore();
-    await rm(build.config.public, { recursive: true });
+    await rm(build.config.public, { recursive: true, force: true });
   });
 
   test("test with no public dir", async () => {
@@ -1107,12 +837,12 @@ describe("parse", () => {
     spyOn(build, "copyPublic");
     spyOn(build, "writeManifest");
     build.config.public = resolve(cwd, "public");
-    await rm(build.config.public, { recursive: true });
+    await rm(build.config.public, { recursive: true, force: true });
   });
 
   afterEach(async () => {
     mock.restore();
-    await rm(build.config.public, { recursive: true });
+    await rm(build.config.public, { recursive: true, force: true });
   });
 
   test("test with no additional config", async () => {

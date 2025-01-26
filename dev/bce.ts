@@ -8,7 +8,7 @@ export class BCE {
   constructor() {}
 
   async init() {
-    await rm(resolve(process.cwd(), "dist"), { recursive: true });
+    await rm(resolve(process.cwd(), "dist"), { recursive: true, force: true });
 
     const configFile = resolve(process.cwd(), "bce.config.ts");
     let config: BCEConfig | undefined;
