@@ -1,4 +1,4 @@
-name: Publish dev package to npm registry
+name: Publish bce package to npm registry
 
 on:
   workflow_dispatch:
@@ -12,10 +12,6 @@ on:
           - major
           - minor
           - patch
-
-defaults:
-  run:
-    working-directory: dev
 
 permissions:
   contents: write
@@ -34,35 +30,27 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Create version-dev branch
-        run: git checkout -b version-dev
+      - name: Create version-bce branch
+        run: git checkout -b version-bce
 
       - name: Bump version
         uses: phips28/gh-action-bump-version@v11.0.7
         with:
           version-type: ${{ inputs.version }}
           skip-tag: true
-          commit-message: "Bump ${{ inputs.version }} version of dev"
+          commit-message: "Bump ${{ inputs.version }} version of bce"
           bump-policy: "ignore"
-          target-branch: "version-dev"
-        env:
-          PACKAGEJSON_DIR: "dev"
+          target-branch: "version-bce"
 
       - name: PR to main
-        run: gh pr create -B master -H version-dev -t "Bump version" -b "New version" --no-maintainer-edit
+        run: gh pr create -B master -H version-bce -t "Bump version" -b "New version" --no-maintainer-edit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge PR
-        run: gh pr merge version-dev -d -m
+        run: gh pr merge version-bce -d -m
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build package
-        run: bun run build
 
       - name: Publish package
         run: bun publish
