@@ -17,11 +17,12 @@ defaults:
   run:
     working-directory: dev
 
+permissions:
+  contents: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -36,6 +37,7 @@ jobs:
           skip-tag: true
           commit-message: "Bump ${{ inputs.version }} version of dev"
           bump-policy: "ignore"
+          target-branch: "version"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PACKAGEJSON_DIR: "dev"
