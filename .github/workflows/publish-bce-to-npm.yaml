@@ -29,6 +29,8 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          registry-url: https://registry.npmjs.org/
 
       - name: Create version-bce branch
         run: git checkout -b version-bce
@@ -53,6 +55,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish package
-        run: bunx npm login && bun publish
+        run: bun publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
