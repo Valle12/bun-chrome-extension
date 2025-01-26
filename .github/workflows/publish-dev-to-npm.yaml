@@ -28,12 +28,15 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Bump version
-        run: |
-          npm version ${{ inputs.version }}
-          git config user.email ${{ secrets.EMAIL }}
-          git config user.name Valle12
-          git commit -am "Bump ${{ inputs.version }} version of dev"
-          git push -f origin master
+        uses: phips28/gh-action-bump-version@v11.0.7
+        with:
+          version-type: ${{ inputs.version }}
+          skip-tag: true
+          commit-message: "Bump ${{ inputs.version }} version of dev"
+          bump-policy: "ignore"
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN }}
+          PACKAGEJSON_DIR: "dev"
 
       - name: Download package
         uses: actions/download-artifact@v4
