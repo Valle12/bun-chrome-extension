@@ -20,17 +20,21 @@ defaults:
 permissions:
   contents: write
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+
+      - name: Create version branch
+        run: git checkout -b version
 
       - name: Bump version
         uses: phips28/gh-action-bump-version@v11.0.7
@@ -39,9 +43,7 @@ jobs:
           skip-tag: true
           commit-message: "Bump ${{ inputs.version }} version of dev"
           bump-policy: "ignore"
-          target-branch: "version"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PACKAGEJSON_DIR: "dev"
 
       - name: Download package
