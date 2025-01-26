@@ -63,6 +63,7 @@ jobs:
         with:
           name: dev
           github-token: ${{ secrets.GH_PAT }}
+          repository: "Valle12/bun-chrome-extension"
 
       - name: Log workspace
         run: cd ${{ github.workspace }} && ls -r
