@@ -49,7 +49,9 @@ jobs:
           PACKAGEJSON_DIR: "dev"
 
       - name: PR to main
-        run: gh auth refresh -s project && gh pr create -B master -H version -t "Bump version" -b "New version" --no-maintainer-edit
+        run: gh pr create -B master -H version -t "Bump version" -b "New version" --no-maintainer-edit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download package
         uses: actions/download-artifact@v4
