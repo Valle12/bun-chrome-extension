@@ -54,7 +54,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge PR
-        run: gh pr merge version -d
+        run: gh pr merge version -d -m
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
