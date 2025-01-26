@@ -28,7 +28,12 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Bump version
-        run: npm version ${{ inputs.version }} && git commit -am "Bump ${{ inputs.version }} version of dev" && git push -f origin master
+        run: |
+          npm version ${{ inputs.version }}
+          git config user.email ${{ secrets.EMAIL }}
+          git config user.name Valle12
+          git commit -am "Bump ${{ inputs.version }} version of dev"
+          git push -f origin master
 
       - name: Download package
         uses: actions/download-artifact@v4
