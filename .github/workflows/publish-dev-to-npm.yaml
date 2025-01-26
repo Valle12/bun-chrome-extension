@@ -1,0 +1,39 @@
+name: Publish package to npm registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "What version part do you want to change?"
+        required: true
+        type: choice
+        default: "patch"
+        options:
+          - major
+          - minor
+          - patch
+
+defaults:
+  run:
+    working-directory: dev
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Bump version
+        run: npm version ${{ inputs.version }} && git commit -am "Bump ${{ inputs.version }} version of dev" && git push -f origin master
+
+      - name: Download package
+        uses: actions/download-artifact@v4
+        with:
+          name: dev
+
+      - name: Log workspace
+        run: cd ${{ github.workspace }} && ls -r
