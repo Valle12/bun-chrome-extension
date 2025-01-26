@@ -53,4 +53,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish package
-        run: bun publish
+        run: bunx npm login && bun publish
