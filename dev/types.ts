@@ -100,6 +100,9 @@ export type BCEConfig = Omit<
   | "banner"
   | "footer"
   | "experimentalCss"
+  | "env"
+  | "drop"
+  | "throw"
 > & {
   public?: string;
 };

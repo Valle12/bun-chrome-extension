@@ -1,18 +1,16 @@
 #!/usr/bin/env bun
-import { exists, rm } from "fs/promises";
+import { rm } from "fs/promises";
 import { resolve } from "path";
 import { Build } from "./build";
 import type { BCEConfig, FullManifest } from "./types";
 
 export class BCE {
-  constructor() {}
-
   async init() {
     await rm(resolve(process.cwd(), "dist"), { recursive: true, force: true });
 
     const configFile = resolve(process.cwd(), "bce.config.ts");
     let config: BCEConfig | undefined;
-    if (await exists(configFile)) {
+    if (await Bun.file(configFile).exists()) {
       const configModule = await import(configFile);
       config = configModule.default;
     }
@@ -25,7 +23,11 @@ export class BCE {
   }
 }
 
-if (import.meta.path === Bun.main) {
+export async function main() {
   const bce = new BCE();
-  bce.init();
+  await bce.init();
+}
+
+if (import.meta.path === Bun.main) {
+  main();
 }

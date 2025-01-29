@@ -81,7 +81,12 @@ export class Build {
             const popupBase = basename(this.manifest.action.default_popup);
             const popup = popupBase.substring(0, popupBase.indexOf(".html"));
             let build = result.outputs.shift();
-            while (build && !build.path.includes(popup)) {
+            while (
+              build &&
+              (build.kind !== "entry-point" ||
+                build.loader !== "html" ||
+                !basename(build.path).includes(popup))
+            ) {
               build = result.outputs.shift();
             }
             if (!build) break;
@@ -110,7 +115,12 @@ export class Build {
               optionsBase.indexOf(".html")
             );
             let build = result.outputs.shift();
-            while (build && !build.path.includes(options)) {
+            while (
+              build &&
+              (build.kind !== "entry-point" ||
+                build.loader !== "html" ||
+                !build.path.includes(options))
+            ) {
               build = result.outputs.shift();
             }
             if (!build) break;
@@ -143,7 +153,12 @@ export class Build {
               optionsUiBase.indexOf(".html")
             );
             let build = result.outputs.shift();
-            while (build && !build.path.includes(optionsUi)) {
+            while (
+              build &&
+              (build.kind !== "entry-point" ||
+                build.loader !== "html" ||
+                !build.path.includes(optionsUi))
+            ) {
               build = result.outputs.shift();
             }
             if (!build) break;
@@ -257,7 +272,7 @@ export class Build {
   extractPaths(properties: Map<Properties, boolean>) {
     const paths: string[] = [];
 
-    if (this.manifest.background) {
+    if (this.manifest.background && this.manifest.background.service_worker) {
       const file = resolve(this.manifest.background.service_worker);
       this.manifest.background.service_worker = file;
       paths.push(file);
