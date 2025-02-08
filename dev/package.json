@@ -16,7 +16,8 @@
   "files": [
     "bce.ts",
     "build.ts",
-    "index.ts"
+    "index.ts",
+    "types.ts"
   ],
   "devDependencies": {
     "@types/bun": "latest",
