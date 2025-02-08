@@ -64,6 +64,11 @@ export class Index {
       recursive: true,
       force: true,
     });
+
+    // install dependencies
+    await Bun.spawn(["bun", "install"], {
+      cwd: answer,
+    }).exited;
   }
 }
 
