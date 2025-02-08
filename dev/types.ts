@@ -56,28 +56,6 @@ export function defineManifest(manifest: Manifest): FullManifest {
   };
 }
 
-// Build types
-export type HTMLType = {
-  originalURL: string;
-  distURL?: string;
-  property: "action.default_popup" | "options_page" | "options_ui.page";
-  resolvedScripts?: string[];
-  scripts?: string[];
-};
-
-export type Attributes = {
-  src: string;
-  href: string;
-  rel: "stylesheet" | "preconnect";
-};
-
-export type Properties =
-  | "background.service_worker"
-  | "content_scripts.ts"
-  | "action.default_popup"
-  | "options_page"
-  | "options_ui.page";
-
 // BCE Config
 export type BCEConfig = Omit<
   BuildConfig,
@@ -103,9 +81,7 @@ export type BCEConfig = Omit<
   | "env"
   | "drop"
   | "throw"
-> & {
-  public?: string;
-};
+>;
 
 export function defineConfig(config: BCEConfig): BCEConfig {
   return config;

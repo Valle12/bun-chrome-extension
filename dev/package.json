@@ -9,22 +9,20 @@
   ],
   "license": "MIT",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.ts",
   "bin": {
-    "bce": "dist/bce.js"
+    "bce": "bce.ts"
   },
   "files": [
-    "dist"
+    "bce.ts",
+    "build.ts",
+    "index.ts"
   ],
-  "scripts": {
-    "build": "rm -rf dist && bunx tsc -p tsconfig-build.json"
-  },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/chrome": "latest"
+    "@types/chrome": "^0.0.302"
   },
   "peerDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.7.3"
   }
 }

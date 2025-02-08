@@ -10,16 +10,29 @@ import {
 import { mkdir, readdir, rm } from "fs/promises";
 import { join, relative, resolve } from "path";
 import { Build } from "../build";
-import type {
-  CustomContentScript,
-  FullManifest,
-  Icons,
-  Properties,
-} from "../types";
+import type { CustomContentScript, FullManifest, Icons } from "../types";
 import { defineManifest } from "../types";
 
 let build: Build;
+let tsTest1: string;
+let tsTest2: string;
+let tsTest3: string;
+let popupTest: string;
+let popupWithStylesheetTest: string;
+let optionsPageTest: string;
+let optionsPageWithStylesheetTest: string;
+let optionsUiTest: string;
+let optionsUiWithStylesheetTest: string;
+let cssTest1: string;
+let img16: string;
+let img32: string;
+let img48: string;
+let img128: string;
 const cwd = resolve(import.meta.dir, "..");
+
+type CustomContentScriptTest = CustomContentScript & {
+  js: string[];
+};
 
 beforeEach(async () => {
   build = new Build({
@@ -28,6 +41,30 @@ beforeEach(async () => {
     version: "0.0.1",
   });
   build.config.outdir = resolve(cwd, "dist");
+  tsTest1 = build.posixPath(resolve(cwd, "test/resources/test1.ts"));
+  tsTest2 = build.posixPath(resolve(cwd, "test/resources/test2.ts"));
+  tsTest3 = build.posixPath(resolve(cwd, "test/resources/test3.ts"));
+  popupTest = build.posixPath(resolve(cwd, "test/resources/popup.html"));
+  popupWithStylesheetTest = build.posixPath(
+    resolve(cwd, "test/resources/popup-with-stylesheet.html")
+  );
+  optionsPageTest = build.posixPath(
+    resolve(cwd, "test/resources/optionsPage.html")
+  );
+  optionsPageWithStylesheetTest = build.posixPath(
+    resolve(cwd, "test/resources/optionsPage-with-stylesheet.html")
+  );
+  optionsUiTest = build.posixPath(
+    resolve(cwd, "test/resources/optionsUI.html")
+  );
+  optionsUiWithStylesheetTest = build.posixPath(
+    resolve(cwd, "test/resources/optionsUI-with-stylesheet.html")
+  );
+  cssTest1 = build.posixPath(resolve(cwd, "test/resources/test1.css"));
+  img16 = build.posixPath(resolve(cwd, "public/icons/16.png"));
+  img32 = build.posixPath(resolve(cwd, "public\\icons\\32.png"));
+  img48 = build.posixPath(resolve(cwd, "public/icons\\48.png"));
+  img128 = build.posixPath(resolve(cwd, "public") + "/icons/128.png");
   await rm(build.config.outdir, { recursive: true, force: true });
 });
 
@@ -37,20 +74,17 @@ afterEach(async () => {
 
 describe("extractPaths", () => {
   test("test with no additional config", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties).toBeEmpty();
     expect(paths).toBeEmpty();
   });
 
   test("test with background info", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -59,18 +93,15 @@ describe("extractPaths", () => {
       },
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(1);
-    expect(properties.get("background.service_worker")).toBeTrue();
     expect(paths.length).toBe(1);
-    const file = resolve("test1.ts");
+    const file = build.posixPath(resolve("test1.ts"));
     expect(paths[0]).toBe(file);
     expect(build.manifest.background?.service_worker).toBe(file);
   });
 
   test("test with content_scripts info", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -81,21 +112,18 @@ describe("extractPaths", () => {
       ],
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(1);
-    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(1);
-    const file = resolve("test1.ts");
+    const file = build.posixPath(resolve("test1.ts"));
     expect(paths[0]).toBe(file);
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toBe(file);
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe(file);
   });
 
   test("test with popup info", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -104,36 +132,30 @@ describe("extractPaths", () => {
       },
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(1);
-    expect(properties.get("action.default_popup")).toBeTrue();
     expect(paths.length).toBe(1);
-    const file = resolve("popup.html");
+    const file = build.posixPath(resolve("popup.html"));
     expect(paths[0]).toBe(file);
     expect(build.manifest.action?.default_popup).toBe(file);
   });
 
   test("test with options_page info", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       options_page: "optionsPage.html",
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(1);
-    expect(properties.get("options_page")).toBeTrue();
     expect(paths.length).toBe(1);
-    const file = resolve("optionsPage.html");
+    const file = build.posixPath(resolve("optionsPage.html"));
     expect(paths[0]).toBe(file);
     expect(build.manifest.options_page).toBe(file);
   });
 
   test("test with options_ui.page info", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -142,18 +164,15 @@ describe("extractPaths", () => {
       },
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(1);
-    expect(properties.get("options_ui.page")).toBeTrue();
     expect(paths.length).toBe(1);
-    const file = resolve("optionsUI.html");
+    const file = build.posixPath(resolve("optionsUI.html"));
     expect(paths[0]).toBe(file);
     expect(build.manifest.options_ui?.page).toBe(file);
   });
 
   test("test with background and content_scripts info", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -167,25 +186,21 @@ describe("extractPaths", () => {
       ],
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(2);
-    expect(properties.get("background.service_worker")).toBeTrue();
-    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(2);
-    const file1 = resolve("src/test1.ts");
+    const file1 = build.posixPath(resolve("src/test1.ts"));
     expect(paths[0]).toBe(file1);
-    const file2 = resolve("test2.ts");
+    const file2 = build.posixPath(resolve("test2.ts"));
     expect(paths[1]).toBe(file2);
     expect(build.manifest.background?.service_worker).toBe(file1);
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toBe(file2);
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe(file2);
   });
 
   test("test with multiple ts files", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -196,24 +211,21 @@ describe("extractPaths", () => {
       ],
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(1);
-    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(2);
-    const file1 = resolve("test1.ts");
+    const file1 = build.posixPath(resolve("test1.ts"));
     expect(paths[0]).toBe(file1);
-    const file2 = resolve("src/test2.ts");
+    const file2 = build.posixPath(resolve("src/test2.ts"));
     expect(paths[1]).toBe(file2);
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toBe(file1);
-    expect(ts[1]).toBe(file2);
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe(file1);
+    expect(js[1]).toBe(file2);
   });
 
   test("test with multiple content_scripts", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -227,31 +239,25 @@ describe("extractPaths", () => {
       ],
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(1);
-    expect(properties.get("content_scripts.ts")).toBeTrue();
     expect(paths.length).toBe(2);
-    const file1 = resolve("test1.ts");
+    const file1 = build.posixPath(resolve("test1.ts"));
     expect(paths[0]).toBe(file1);
-    const file2 = resolve("test2.ts");
+    const file2 = build.posixPath(resolve("test2.ts"));
     expect(paths[1]).toBe(file2);
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toBe(file1);
-    const ts2 = contentScripts[1].ts as string[];
-    expect(ts2[0]).toBe(file2);
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe(file1);
+    const js2 = contentScripts[1].js as string[];
+    expect(js2[0]).toBe(file2);
   });
 
   test("test with everything", () => {
-    const properties: Map<Properties, boolean> = new Map();
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
-      background: {
-        service_worker: "src/test1.ts",
-      },
       content_scripts: [
         {
           ts: ["test1.ts"],
@@ -260,6 +266,9 @@ describe("extractPaths", () => {
           ts: ["test2.ts", "test3.ts"],
         },
       ],
+      background: {
+        service_worker: "src/test1.ts",
+      },
       action: {
         default_popup: "popup-with-stylesheet.html",
       },
@@ -269,37 +278,31 @@ describe("extractPaths", () => {
       },
     });
 
-    const paths = build.extractPaths(properties);
+    const paths = build.extractPaths();
 
-    expect(properties.size).toBe(5);
-    expect(properties.get("background.service_worker")).toBeTrue();
-    expect(properties.get("content_scripts.ts")).toBeTrue();
-    expect(properties.get("action.default_popup")).toBeTrue();
-    expect(properties.get("options_page")).toBeTrue();
-    expect(properties.get("options_ui.page")).toBeTrue();
     expect(paths.length).toBe(7);
-    const file0 = resolve("src/test1.ts");
+    const file0 = build.posixPath(resolve("test1.ts"));
     expect(paths[0]).toBe(file0);
-    const file1 = resolve("test1.ts");
+    const file1 = build.posixPath(resolve("test2.ts"));
     expect(paths[1]).toBe(file1);
-    const file2 = resolve("test2.ts");
+    const file2 = build.posixPath(resolve("test3.ts"));
     expect(paths[2]).toBe(file2);
-    const file3 = resolve("test3.ts");
+    const file3 = build.posixPath(resolve("src/test1.ts"));
     expect(paths[3]).toBe(file3);
-    const file4 = resolve("popup-with-stylesheet.html");
+    const file4 = build.posixPath(resolve("popup-with-stylesheet.html"));
     expect(paths[4]).toBe(file4);
-    const file5 = resolve("optionsPage.html");
+    const file5 = build.posixPath(resolve("optionsPage.html"));
     expect(paths[5]).toBe(file5);
-    const file6 = resolve("optionsUI.html");
+    const file6 = build.posixPath(resolve("optionsUI.html"));
     expect(paths[6]).toBe(file6);
-    expect(build.manifest.background?.service_worker).toBe(file0);
+    expect(build.manifest.background?.service_worker).toBe(file3);
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toBe(file1);
-    const ts2 = contentScripts[1].ts as string[];
-    expect(ts2[0]).toBe(file2);
-    expect(ts2[1]).toBe(file3);
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe(file0);
+    const js2 = contentScripts[1].js as string[];
+    expect(js2[0]).toBe(file1);
+    expect(js2[1]).toBe(file2);
     expect(build.manifest.action?.default_popup).toBe(file4);
     expect(build.manifest.options_page).toBe(file5);
     expect(build.manifest.options_ui?.page).toBe(file6);
@@ -329,12 +332,11 @@ describe("parseManifest", () => {
   });
 
   test("test with popup info", async () => {
-    const popup = resolve(cwd, "test/resources/popup.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       action: {
-        default_popup: popup,
+        default_popup: popupTest,
       },
     });
 
@@ -342,45 +344,39 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popup],
+      entrypoints: [popupTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.action?.default_popup).toContain("popup-");
-    expect(build.manifest.action?.default_popup).toContain(".html");
+    expect(build.manifest.action?.default_popup).toBe("popup.html");
   });
 
   test("test with options_page info", async () => {
-    const optionsPage = resolve(cwd, "test/resources/optionsPage.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
-      options_page: optionsPage,
+      options_page: optionsPageTest,
     });
 
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsPage],
+      entrypoints: [optionsPageTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.options_page).toContain("optionsPage-");
-    expect(build.manifest.options_page).toContain(".html");
+    expect(build.manifest.options_page).toBe("optionsPage.html");
   });
 
   test("test with options_ui info", async () => {
-    const optionsUI = resolve(cwd, "test/resources/optionsUI.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       options_ui: {
-        page: optionsUI,
+        page: optionsUiTest,
       },
     });
 
@@ -388,23 +384,20 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsUI],
+      entrypoints: [optionsUiTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.options_ui?.page).toContain("optionsUI-");
-    expect(build.manifest.options_ui?.page).toContain(".html");
+    expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
   });
 
   test("test with background info", async () => {
-    const service_worker = resolve(cwd, "test/resources/test1.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: service_worker,
+        service_worker: tsTest1,
       },
     });
 
@@ -412,24 +405,21 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [service_worker],
+      entrypoints: [tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(1);
-    expect(build.manifest.background?.service_worker).toContain("test1-");
-    expect(build.manifest.background?.service_worker).toContain(".js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
   });
 
   test("test with content_scripts info", async () => {
-    const contentScript = resolve(cwd, "test/resources/test1.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       content_scripts: [
         {
-          ts: [contentScript],
+          ts: [tsTest1],
         },
       ],
     });
@@ -438,31 +428,27 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [contentScript],
+      entrypoints: [tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(1);
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test1-");
-    expect(ts[0]).toContain(".js");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test1.js");
   });
 
   test("test with background and content_scripts info", async () => {
-    const contentScript1 = join(cwd, "test/resources/test1.ts");
-    const contentScript2 = join(cwd, "test/resources/test2.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: contentScript1,
+        service_worker: tsTest1,
       },
       content_scripts: [
         {
-          ts: [contentScript2],
+          ts: [tsTest2],
         },
       ],
     });
@@ -471,30 +457,25 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [contentScript1, contentScript2],
+      entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.background?.service_worker).toContain("test1-");
-    expect(build.manifest.background?.service_worker).toContain(".js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test2-");
-    expect(ts[0]).toContain(".js");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test2.js");
   });
 
   test("test with multiple ts files", async () => {
-    const contentScript1 = resolve(cwd, "test/resources/test1.ts");
-    const contentScript2 = resolve(cwd, "test/resources/test2.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       content_scripts: [
         {
-          ts: [contentScript1, contentScript2],
+          ts: [tsTest1, tsTest2],
         },
       ],
     });
@@ -503,33 +484,28 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [contentScript1, contentScript2],
+      entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test1-");
-    expect(ts[0]).toContain(".js");
-    expect(ts[1]).toContain("test2-");
-    expect(ts[1]).toContain(".js");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test1.js");
+    expect(js[1]).toBe("test2.js");
   });
 
   test("test with multiple content_scripts", async () => {
-    const contentScript1 = resolve(cwd, "test/resources/test1.ts");
-    const contentScript2 = resolve(cwd, "test/resources/test2.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       content_scripts: [
         {
-          ts: [contentScript1],
+          ts: [tsTest1],
         },
         {
-          ts: [contentScript2],
+          ts: [tsTest2],
         },
       ],
     });
@@ -538,29 +514,25 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [contentScript1, contentScript2],
+      entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test1-");
-    expect(ts[0]).toContain(".js");
-    const ts2 = contentScripts[1].ts as string[];
-    expect(ts2[0]).toContain("test2-");
-    expect(ts2[0]).toContain(".js");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test1.js");
+    const js2 = contentScripts[1].js as string[];
+    expect(js2[0]).toBe("test2.js");
   });
 
   test("test with popup info", async () => {
-    const popup = resolve(cwd, "test/resources/popup.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       action: {
-        default_popup: popup,
+        default_popup: popupTest,
       },
     });
 
@@ -568,23 +540,20 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popup],
+      entrypoints: [popupTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.action?.default_popup).toContain("popup-");
-    expect(build.manifest.action?.default_popup).toContain(".html");
+    expect(build.manifest.action?.default_popup).toBe("popup.html");
   });
 
   test("test with popup with script and link tags", async () => {
-    const popup = resolve(cwd, "test/resources/popup-with-stylesheet.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       action: {
-        default_popup: popup,
+        default_popup: popupWithStylesheetTest,
       },
     });
 
@@ -592,45 +561,41 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popup],
+      entrypoints: [popupWithStylesheetTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.action?.default_popup).toContain("popup-");
-    expect(build.manifest.action?.default_popup).toContain(".html");
+    expect(build.manifest.action?.default_popup).toBe(
+      "popup-with-stylesheet.html"
+    );
   });
 
   test("test with options_page info", async () => {
-    const optionsPage = resolve(cwd, "test/resources/optionsPage.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
-      options_page: optionsPage,
+      options_page: optionsPageTest,
     });
 
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsPage],
+      entrypoints: [optionsPageTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.options_page).toContain("optionsPage-");
-    expect(build.manifest.options_page).toContain(".html");
+    expect(build.manifest.options_page).toBe("optionsPage.html");
   });
 
   test("test with options_ui info", async () => {
-    const optionsUI = resolve(cwd, "test/resources/optionsUI.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       options_ui: {
-        page: optionsUI,
+        page: optionsUiTest,
       },
     });
 
@@ -638,27 +603,24 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsUI],
+      entrypoints: [optionsUiTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.options_ui?.page).toContain("optionsUI-");
-    expect(build.manifest.options_ui?.page).toContain(".html");
+    expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
   });
 
   test("test two properties pointing to the same file", async () => {
-    const file1 = resolve(cwd, "test/resources/test1.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: file1,
+        service_worker: tsTest1,
       },
       content_scripts: [
         {
-          ts: [file1],
+          ts: [tsTest1],
         },
       ],
     });
@@ -667,33 +629,28 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [file1, file1],
+      entrypoints: [tsTest1, tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(1);
-    expect(build.manifest.background?.service_worker).toContain("test1-");
-    expect(build.manifest.background?.service_worker).toContain(".js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test1-");
-    expect(ts[0]).toContain(".js");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test1.js");
   });
 
   test("test two properties pointing to the same file and multiple ts files", async () => {
-    const file1 = resolve(cwd, "test/resources/test1.ts");
-    const file2 = resolve(cwd, "test/resources/test2.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: file1,
+        service_worker: tsTest1,
       },
       content_scripts: [
         {
-          ts: [file1, file2],
+          ts: [tsTest1, tsTest2],
         },
       ],
     });
@@ -702,38 +659,32 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [file1, file1, file2],
+      entrypoints: [tsTest1, tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.background?.service_worker).toContain("test1-");
-    expect(build.manifest.background?.service_worker).toContain(".js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test1-");
-    expect(ts[0]).toContain(".js");
-    expect(ts[1]).toContain("test2-");
-    expect(ts[1]).toContain(".js");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test1.js");
+    expect(js[1]).toBe("test2.js");
   });
 
   test("test two properties pointing to the same file and multiple content_scripts", async () => {
-    const file1 = resolve(cwd, "test/resources/test1.ts");
-    const file2 = resolve(cwd, "test/resources/test2.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: file1,
+        service_worker: tsTest1,
       },
       content_scripts: [
         {
-          ts: [file1],
+          ts: [tsTest1],
         },
         {
-          ts: [file2],
+          ts: [tsTest2],
         },
       ],
     });
@@ -742,40 +693,33 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [file1, file1, file2],
+      entrypoints: [tsTest1, tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(2);
-    expect(build.manifest.background?.service_worker).toContain("test1-");
-    expect(build.manifest.background?.service_worker).toContain(".js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test1-");
-    expect(ts[0]).toContain(".js");
-    const ts2 = contentScripts[1].ts as string[];
-    expect(ts2[0]).toContain("test2-");
-    expect(ts2[0]).toContain(".js");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test1.js");
+    const js2 = contentScripts[1].js as string[];
+    expect(js2[0]).toBe("test2.js");
   });
 
   test("test with 5 entries while the ts files point to the same file", async () => {
-    const file1 = resolve(cwd, "test/resources/test1.ts");
-    const file2 = resolve(cwd, "test/resources/test2.ts");
-    const file3 = resolve(cwd, "test/resources/test3.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: file1,
+        service_worker: tsTest1,
       },
       content_scripts: [
         {
-          ts: [file2, file3],
+          ts: [tsTest2, tsTest3],
         },
         {
-          ts: [file3, file2],
+          ts: [tsTest3, tsTest2],
         },
       ],
     });
@@ -784,44 +728,32 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [file1, file2, file3, file3, file2],
+      entrypoints: [tsTest1, tsTest2, tsTest3, tsTest3, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(3);
-    expect(build.manifest.background?.service_worker).toContain("test1-");
-    expect(build.manifest.background?.service_worker).toContain(".js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test2-");
-    expect(ts[0]).toContain(".js");
-    expect(ts[1]).toContain("test3-");
-    expect(ts[1]).toContain(".js");
-    const ts2 = contentScripts[1].ts as string[];
-    expect(ts2[0]).toContain("test3-");
-    expect(ts2[0]).toContain(".js");
-    expect(ts2[1]).toContain("test2-");
-    expect(ts2[1]).toContain(".js");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test2.js");
+    expect(js[1]).toBe("test3.js");
+    const js2 = contentScripts[1].js as string[];
+    expect(js2[0]).toBe("test3.js");
+    expect(js2[1]).toBe("test2.js");
   });
 
   test("test with multiple html files, that contain multiple css files", async () => {
-    const file1 = resolve(cwd, "test/resources/popup-with-stylesheet.html");
-    const file2 = resolve(
-      cwd,
-      "test/resources/optionsPage-with-stylesheet.html"
-    );
-    const file3 = resolve(cwd, "test/resources/optionsUI-with-stylesheet.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       action: {
-        default_popup: file1,
+        default_popup: popupWithStylesheetTest,
       },
-      options_page: file2,
+      options_page: optionsPageWithStylesheetTest,
       options_ui: {
-        page: file3,
+        page: optionsUiWithStylesheetTest,
       },
     });
 
@@ -829,18 +761,24 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [file1, file2, file3],
+      entrypoints: [
+        popupWithStylesheetTest,
+        optionsPageWithStylesheetTest,
+        optionsUiWithStylesheetTest,
+      ],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(6);
-    expect(build.manifest.action?.default_popup).toContain("popup-");
-    expect(build.manifest.action?.default_popup).toContain(".html");
-    expect(build.manifest.options_page).toContain("optionsPage-");
-    expect(build.manifest.options_page).toContain(".html");
-    expect(build.manifest.options_ui?.page).toContain("optionsUI-");
-    expect(build.manifest.options_ui?.page).toContain(".html");
+    expect(build.manifest.action?.default_popup).toBe(
+      "popup-with-stylesheet.html"
+    );
+    expect(build.manifest.options_page).toBe(
+      "optionsPage-with-stylesheet.html"
+    );
+    expect(build.manifest.options_ui?.page).toBe(
+      "optionsUI-with-stylesheet.html"
+    );
 
     const popup = await Bun.file(
       resolve(
@@ -868,54 +806,53 @@ describe("parseManifest", () => {
   });
 
   test("test with everything", async () => {
-    const file1 = resolve(cwd, "test/resources/test1.ts");
-    const file2 = resolve(cwd, "test/resources/test2.ts");
-    const file3 = resolve(cwd, "test/resources/popup.html");
-    const file4 = resolve(cwd, "test/resources/optionsPage.html");
-    const file5 = resolve(cwd, "test/resources/optionsUI.html");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: file1,
+        service_worker: tsTest1,
+      },
+      action: {
+        default_popup: popupTest,
+      },
+      options_page: optionsPageTest,
+      options_ui: {
+        page: optionsUiTest,
       },
       content_scripts: [
         {
-          ts: [file2],
+          ts: [tsTest2],
+          css: [cssTest1],
         },
       ],
-      action: {
-        default_popup: file3,
-      },
-      options_page: file4,
-      options_ui: {
-        page: file5,
-      },
     });
 
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [file1, file2, file3, file4, file5],
+      entrypoints: [
+        tsTest1,
+        popupTest,
+        optionsPageTest,
+        optionsUiTest,
+        tsTest2,
+        cssTest1,
+      ],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name]-[hash].[ext]",
+      naming: "[dir]/[name].[ext]",
     });
-    expect(Array.prototype.shift).toHaveBeenCalledTimes(8);
-    expect(build.manifest.background?.service_worker).toContain("test1-");
-    expect(build.manifest.background?.service_worker).toContain(".js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
-      .content_scripts as CustomContentScript[];
-    const ts = contentScripts[0].ts as string[];
-    expect(ts[0]).toContain("test2-");
-    expect(ts[0]).toContain(".js");
-    expect(build.manifest.action?.default_popup).toContain("popup-");
-    expect(build.manifest.action?.default_popup).toContain(".html");
-    expect(build.manifest.options_page).toContain("optionsPage-");
-    expect(build.manifest.options_page).toContain(".html");
-    expect(build.manifest.options_ui?.page).toContain("optionsUI-");
-    expect(build.manifest.options_ui?.page).toContain(".html");
+      .content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test2.js");
+    const css = contentScripts[0].css as string[];
+    expect(css[0]).toBe("test1.css");
+    expect(build.manifest.action?.default_popup).toBe("popup.html");
+    expect(build.manifest.options_page).toBe("optionsPage.html");
+    expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
 
     const popup = await Bun.file(
       resolve(
@@ -925,11 +862,13 @@ describe("parseManifest", () => {
     ).text();
     expect(popup).toContain("chunk-");
     expect(popup).toContain(".js");
+
     const optionsPage = await Bun.file(
       resolve(build.config.outdir, build.manifest.options_page as string)
     ).text();
     expect(optionsPage).toContain("chunk-");
     expect(optionsPage).toContain(".js");
+
     const optionsUI = await Bun.file(
       resolve(build.config.outdir, build.manifest.options_ui?.page as string)
     ).text();
@@ -939,15 +878,18 @@ describe("parseManifest", () => {
 });
 
 describe("writeManifest", () => {
+  let publicFolder: string;
+
   beforeEach(async () => {
     spyOn(Bun, "write");
-    build.config.public = resolve(cwd, "public");
-    await rm(build.config.public, { recursive: true, force: true });
+    spyOn(Bun, "build");
+    publicFolder = resolve(cwd, "public");
+    await rm(publicFolder, { recursive: true, force: true });
   });
 
   afterEach(async () => {
     mock.restore();
-    await rm(build.config.public, { recursive: true, force: true });
+    await rm(publicFolder, { recursive: true, force: true });
   });
 
   test("test with minimal config", async () => {
@@ -972,51 +914,57 @@ describe("writeManifest", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: ["test1.js"],
+          ts: [tsTest1],
         },
       ],
     });
 
+    await build.parseManifest();
     await build.writeManifest();
 
     expect(Bun.write).toHaveBeenCalledTimes(1);
-    const content = await Bun.file(
+    const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
-    ).text();
-    expect(content).toContain('"js": [');
-    expect(content).toContain('"test1.js"');
+    ).json();
+    const contentScripts =
+      manifest.content_scripts as CustomContentScriptTest[];
+    const js = contentScripts[0].js as string[];
+    expect(js[0]).toBe("test1.js");
   });
 
   test("test with png in public folder", async () => {
     build.cwd = cwd;
-    await createTestPublicFolder(build.config.public, [
-      "test/resources/icons/16.png",
-    ]);
+    await createTestPublicFolder(publicFolder, ["test/resources/icons/16.png"]);
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       icons: {
-        16: "public/icons/16.png",
+        16: img16,
       },
     });
 
-    await build.preprocessManifest();
-    await build.copyPublic();
+    await build.parseManifest();
     await build.writeManifest();
 
-    const valuesArray = Array.from(build.fileToProperty.values());
-    expect(valuesArray.includes("public/icons/16.png")).toBeTrue();
-    expect(Bun.write).toHaveBeenCalledTimes(3);
+    expect(Bun.build).toHaveBeenCalledTimes(1);
+    expect(Bun.build).toHaveBeenCalledWith({
+      entrypoints: [img16],
+      minify: build.config.minify,
+      outdir: build.config.outdir,
+      naming: "[dir]/[name].[ext]",
+    });
+    expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
     ).json();
     const icons = manifest.icons as Icons;
-    expect(icons["16"]).toBe("public/icons/16.png");
+    expect(icons["16"]).toStartWith("16-");
+    expect(icons["16"]).toEndWith(".png");
   });
 
   test("test with multiple ways of defining paths", async () => {
     build.cwd = cwd;
-    await createTestPublicFolder(build.config.public, [
+    await createTestPublicFolder(publicFolder, [
       "test/resources/icons/16.png",
       "test/resources/icons/32.png",
       "test/resources/icons/48.png",
@@ -1026,196 +974,135 @@ describe("writeManifest", () => {
       name: "test",
       version: "0.0.1",
       icons: {
-        16: "public/icons/16.png",
-        32: "public\\icons\\32.png",
-        48: "public/icons\\48.png",
-        128: build.config.public + "/icons/128.png",
+        16: img16,
+        32: img32,
+        48: img48,
+        128: img128,
       },
     });
 
-    await build.preprocessManifest();
-    await build.copyPublic();
+    await build.parseManifest();
     await build.writeManifest();
 
-    const valuesArray = Array.from(build.fileToProperty.values());
-    expect(valuesArray.includes("public/icons/16.png")).toBeTrue();
-    expect(valuesArray.includes("public/icons/32.png")).toBeTrue();
-    expect(valuesArray.includes("public/icons/48.png")).toBeTrue();
-    expect(valuesArray.includes("public/icons/128.png")).toBeTrue();
-    expect(Bun.write).toHaveBeenCalledTimes(9);
-
+    expect(Bun.build).toHaveBeenCalledTimes(1);
+    expect(Bun.build).toHaveBeenCalledWith({
+      entrypoints: [img16, img32, img48, img128],
+      minify: build.config.minify,
+      outdir: build.config.outdir,
+      naming: "[dir]/[name].[ext]",
+    });
+    expect(Bun.write).toHaveBeenCalledTimes(5);
     const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
     ).json();
     const icons = manifest.icons as Icons;
-    expect(icons["16"]).toBe("public/icons/16.png");
-    expect(icons["32"]).toBe("public/icons/32.png");
-    expect(icons["48"]).toBe("public/icons/48.png");
-    expect(icons["128"]).toBe("public/icons/128.png");
+    expect(icons["16"]).toStartWith("16-");
+    expect(icons["16"]).toEndWith(".png");
+    expect(icons["32"]).toStartWith("32-");
+    expect(icons["32"]).toEndWith(".png");
+    expect(icons["48"]).toStartWith("48-");
+    expect(icons["48"]).toEndWith(".png");
+    expect(icons["128"]).toStartWith("128-");
+    expect(icons["128"]).toEndWith(".png");
   });
 
   test("test with different public and out dir", async () => {
     build.cwd = cwd;
-    build.config.public = resolve(cwd, "testPublic");
+    publicFolder = resolve(cwd, "testPublic");
     build.config.outdir = resolve(cwd, "out");
-    await createTestPublicFolder(build.config.public, [
-      "test/resources/icons/16.png",
-    ]);
+    const testImg16 = build.posixPath(resolve(cwd, "testPublic/icons/16.png"));
+    await createTestPublicFolder(publicFolder, ["test/resources/icons/16.png"]);
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       icons: {
-        16: "testPublic/icons/16.png",
+        16: testImg16,
       },
     });
 
-    await build.preprocessManifest();
-    await build.copyPublic();
+    await build.parseManifest();
     await build.writeManifest();
 
-    const valuesArray = Array.from(build.fileToProperty.values());
-    expect(valuesArray.includes("testPublic/icons/16.png")).toBeTrue();
-    expect(Bun.write).toHaveBeenCalledTimes(3);
-
+    expect(Bun.build).toHaveBeenCalledTimes(1);
+    expect(Bun.build).toHaveBeenCalledWith({
+      entrypoints: [testImg16],
+      minify: build.config.minify,
+      outdir: build.config.outdir,
+      naming: "[dir]/[name].[ext]",
+    });
+    expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
     ).json();
     const icons = manifest.icons as Icons;
-    expect(icons["16"]).toBe("testPublic/icons/16.png");
-  });
-});
-
-describe("copyPublic", () => {
-  beforeEach(async () => {
-    spyOn(Bun, "write");
-    spyOn(await import("fs/promises"), "readdir");
-    build.config.public = resolve(cwd, "public");
-    await rm(build.config.public, { recursive: true, force: true });
-  });
-
-  afterEach(async () => {
-    mock.restore();
-    await rm(build.config.public, { recursive: true, force: true });
-  });
-
-  test("test with no public dir", async () => {
-    await build.copyPublic();
-
-    expect(readdir).not.toHaveBeenCalled();
-  });
-
-  test("test with empty public dir", async () => {
-    await mkdir(resolve(cwd, build.config.public));
-
-    await build.copyPublic();
-
-    expect(readdir).toHaveBeenCalledTimes(1);
-    expect(Bun.write).not.toHaveBeenCalled();
-  });
-
-  test("test with file in public folder", async () => {
-    build.cwd = cwd;
-    await createTestPublicFolder(build.config.public, [
-      "test/resources/icons/16.png",
-    ]);
-
-    await build.copyPublic();
-
-    expect(readdir).toHaveBeenCalledTimes(1);
-    expect(Bun.write).toHaveBeenCalledTimes(2);
-    const files = await readdir(
-      resolve(build.config.outdir, build.config.public),
-      {
-        recursive: true,
-      }
-    );
-    expect(files.length).toBe(2); // icons also counts
+    expect(icons["16"]).toStartWith("16-");
+    expect(icons["16"]).toEndWith(".png");
   });
 });
 
 describe("parse", () => {
+  const publicFolder = resolve(cwd, "public");
+
   beforeEach(async () => {
-    spyOn(build, "preprocessManifest");
     spyOn(build, "parseManifest");
-    spyOn(build, "copyPublic");
     spyOn(build, "writeManifest");
-    build.config.public = resolve(cwd, "public");
-    await rm(build.config.public, { recursive: true, force: true });
+    await rm(publicFolder, { recursive: true, force: true });
   });
 
   afterEach(async () => {
     mock.restore();
-    await rm(build.config.public, { recursive: true, force: true });
+    await rm(publicFolder, { recursive: true, force: true });
   });
 
   test("test with no additional config", async () => {
     await build.parse();
 
-    expect(build.preprocessManifest).toHaveBeenCalledTimes(1);
     expect(build.parseManifest).toHaveBeenCalledTimes(1);
-    expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    expect(build.fileToProperty).toBeEmpty();
   });
 
   test("test with manifest, but no public dir", async () => {
-    const file1 = resolve(cwd, "test/resources/test1.ts");
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: file1,
+        service_worker: tsTest1,
       },
     });
 
     await build.parse();
 
-    expect(build.preprocessManifest).toHaveBeenCalledTimes(1);
     expect(build.parseManifest).toHaveBeenCalledTimes(1);
-    expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    expect(build.fileToProperty.size).toBe(1);
-    expect(build.fileToProperty.get(file1)).toContain(
-      resolve(build.config.outdir, "test1-")
-    );
     const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
     ).json();
-    expect(manifest.background?.service_worker).toContain("test1-");
-    expect(manifest.background?.service_worker).toContain(".js");
+    expect(manifest.background?.service_worker).toBe("test1.js");
   });
 
   test("test with manifest, but empty public dir", async () => {
-    const file1 = resolve(cwd, "test/resources/test1.ts");
-    await mkdir(build.config.public);
+    await mkdir(publicFolder);
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: file1,
+        service_worker: tsTest1,
       },
     });
 
     await build.parse();
 
-    expect(build.preprocessManifest).toHaveBeenCalledTimes(1);
     expect(build.parseManifest).toHaveBeenCalledTimes(1);
-    expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    expect(build.fileToProperty.size).toBe(1);
-    expect(build.fileToProperty.get(file1)).toContain(
-      resolve(build.config.outdir, "test1-")
-    );
     const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
     ).json();
-    expect(manifest.background?.service_worker).toContain("test1-");
-    expect(manifest.background?.service_worker).toContain(".js");
+    expect(manifest.background?.service_worker).toBe("test1.js");
   });
 
   test("test with basic manifest and public folder", async () => {
     build.cwd = cwd;
-    await createTestPublicFolder(build.config.public, [
+    await createTestPublicFolder(publicFolder, [
       "test/resources/icons/16.png",
       "test/resources/icons/32.png",
       "test/resources/icons/48.png",
@@ -1224,15 +1111,40 @@ describe("parse", () => {
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
+      icons: {
+        16: img16,
+        32: img32,
+        48: img48,
+        128: img128,
+      },
     });
 
     await build.parse();
 
     expect(build.parseManifest).toHaveBeenCalledTimes(1);
-    expect(build.copyPublic).toHaveBeenCalledTimes(1);
     expect(build.writeManifest).toHaveBeenCalledTimes(1);
     const files = await readdir(build.config.outdir, { recursive: true });
-    expect(files.length).toBe(7);
+    expect(files.length).toBe(9);
+  });
+});
+
+describe("relativePosixPath", () => {
+  test("test from random path to posix", () => {
+    const relativePath = build.relativePosixPath(
+      build.config.outdir,
+      build.posixPath(resolve(build.config.outdir, "test", "test"))
+    );
+
+    expect(relativePath).toBe("test/test");
+  });
+
+  test("test from posix to posix", () => {
+    const relativePath = build.relativePosixPath(
+      build.posixPath(build.config.outdir),
+      build.posixPath(resolve(build.config.outdir, "test", "test"))
+    );
+
+    expect(relativePath).toBe("test/test");
   });
 });
 

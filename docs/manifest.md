@@ -4,7 +4,7 @@ The file **manifest.ts** is the centre of your entire application.
 Every root file will be listed here and represent the entrypoints for your extension.
 So it is really important to enter the right values for each property.
 And typescript makes that at least a little bit easier, because you can be sure that you have at least the right type.
-You can write your code in typescript and just enter the path (relative or absolute) to the file.
+You can write your code in typescript and just enter the path (posix, win32, relative or absolute) to the file.
 BCE will take care of it and transpiles the file and saves the resulting js file inside the **outdir**.
 All linked files will be transpiled as well, so you don't have to worry about anything.
 
@@ -21,4 +21,4 @@ In the process, it will be changed back into **js** so chrome can properly read 
 ## Public
 
 You also have the ability to provide a public folder, in which you can store all of your assets, which are needed for your extension.
-This folder will just be copied into the **outdir**, while the links inside of the manifest will be changed to reflect new location.
+As long as they are mentioned inside of your manifest directly or referenced through another entrypoint, they will also end up in the **outdir**.
