@@ -36,6 +36,8 @@ describe("init", async () => {
   test("test if basic manifest will be read", async () => {
     const dist = resolve(import.meta.dir, "..", "dist");
     const manifest = resolve(import.meta.dir, "resources/manifest.ts");
+
+    // noinspection TypeScriptValidateTypes
     spyOn(await import("path"), "resolve").mockImplementation((...args) => {
       if (args.includes("manifest.ts")) return manifest;
       return dist;
@@ -51,19 +53,12 @@ describe("init", async () => {
         name: "Test",
         version: "0.0.1",
       },
-      undefined
+      undefined,
     );
   });
 
   test("test if config will be read with manifest", async () => {
-    const dist = resolve(import.meta.dir, "..", "dist");
-    const manifest = resolve(import.meta.dir, "resources/manifest.ts");
-    const config = resolve(import.meta.dir, "resources/bce.config.ts");
-    spyOn(await import("path"), "resolve").mockImplementation((...args) => {
-      if (args.includes("manifest.ts")) return manifest;
-      if (args.includes("bce.config.ts")) return config;
-      return dist;
-    });
+    await mockResolve();
 
     const bce = new BCE();
     await bce.init();
@@ -80,19 +75,12 @@ describe("init", async () => {
         sourcemap: "linked",
         outdir: "dist",
         public: "public",
-      }
+      },
     );
   });
 
   test("test if init will be called, when main is called", async () => {
-    const dist = resolve(import.meta.dir, "..", "dist");
-    const manifest = resolve(import.meta.dir, "resources/manifest.ts");
-    const config = resolve(import.meta.dir, "resources/bce.config.ts");
-    spyOn(await import("path"), "resolve").mockImplementation((...args) => {
-      if (args.includes("manifest.ts")) return manifest;
-      if (args.includes("bce.config.ts")) return config;
-      return dist;
-    });
+    await mockResolve();
     spyOn(BCE.prototype, "init");
     spyOn(Bun, "file");
 
@@ -112,7 +100,19 @@ describe("init", async () => {
         sourcemap: "linked",
         outdir: "dist",
         public: "public",
-      }
+      },
     );
   });
 });
+
+async function mockResolve() {
+  const dist = resolve(import.meta.dir, "..", "dist");
+  const manifest = resolve(import.meta.dir, "resources/manifest.ts");
+  const config = resolve(import.meta.dir, "resources/bce.config.ts");
+  // noinspection TypeScriptValidateTypes
+  spyOn(await import("path"), "resolve").mockImplementation((...args) => {
+    if (args.includes("manifest.ts")) return manifest;
+    if (args.includes("bce.config.ts")) return config;
+    return dist;
+  });
+}

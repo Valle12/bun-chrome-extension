@@ -4,6 +4,8 @@ import { resolve } from "path";
 import { Build } from "./build";
 import type { BCEConfig, FullManifest } from "./types";
 
+export { defineManifest } from "./types";
+
 export class BCE {
   async init() {
     await rm(resolve(process.cwd(), "dist"), { recursive: true, force: true });
@@ -18,6 +20,7 @@ export class BCE {
     const manifestModule = await import(resolve(process.cwd(), "manifest.ts"));
     const manifest: FullManifest = manifestModule.manifest;
     const build = new Build(manifest, config);
+    if (process.argv.length === 3 && process.argv[2] === "--dev") await build.initDev();
     await build.parse();
     console.log("Build completed!");
   }
@@ -29,5 +32,5 @@ export async function main() {
 }
 
 if (import.meta.path === Bun.main) {
-  main();
+  await main();
 }

@@ -5,7 +5,7 @@ import {
   expect,
   mock,
   spyOn,
-  test,
+  test
 } from "bun:test";
 import { mkdir, readdir, rm } from "fs/promises";
 import { join, relative, resolve } from "path";
@@ -38,7 +38,7 @@ beforeEach(async () => {
   build = new Build({
     manifest_version: 3,
     name: "test",
-    version: "0.0.1",
+    version: "0.0.1"
   });
   build.config.outdir = resolve(cwd, "dist");
   tsTest1 = build.posixPath(resolve(cwd, "test/resources/test1.ts"));
@@ -76,7 +76,7 @@ describe("extractPaths", () => {
   test("test with no additional config", () => {
     build.manifest = defineManifest({
       name: "test",
-      version: "0.0.1",
+      version: "0.0.1"
     });
 
     const paths = build.extractPaths();
@@ -89,8 +89,8 @@ describe("extractPaths", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: "test1.ts",
-      },
+        service_worker: "test1.ts"
+      }
     });
 
     const paths = build.extractPaths();
@@ -107,9 +107,9 @@ describe("extractPaths", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: ["test1.ts"],
-        },
-      ],
+          ts: ["test1.ts"]
+        }
+      ]
     });
 
     const paths = build.extractPaths();
@@ -128,8 +128,8 @@ describe("extractPaths", () => {
       name: "test",
       version: "0.0.1",
       action: {
-        default_popup: "popup.html",
-      },
+        default_popup: "popup.html"
+      }
     });
 
     const paths = build.extractPaths();
@@ -144,7 +144,7 @@ describe("extractPaths", () => {
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
-      options_page: "optionsPage.html",
+      options_page: "optionsPage.html"
     });
 
     const paths = build.extractPaths();
@@ -160,8 +160,8 @@ describe("extractPaths", () => {
       name: "test",
       version: "0.0.1",
       options_ui: {
-        page: "optionsUI.html",
-      },
+        page: "optionsUI.html"
+      }
     });
 
     const paths = build.extractPaths();
@@ -177,13 +177,13 @@ describe("extractPaths", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: "src/test1.ts",
+        service_worker: "src/test1.ts"
       },
       content_scripts: [
         {
-          ts: ["test2.ts"],
-        },
-      ],
+          ts: ["test2.ts"]
+        }
+      ]
     });
 
     const paths = build.extractPaths();
@@ -206,9 +206,9 @@ describe("extractPaths", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: ["test1.ts", "src/test2.ts"],
-        },
-      ],
+          ts: ["test1.ts", "src/test2.ts"]
+        }
+      ]
     });
 
     const paths = build.extractPaths();
@@ -231,12 +231,12 @@ describe("extractPaths", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: ["test1.ts"],
+          ts: ["test1.ts"]
         },
         {
-          ts: ["test2.ts"],
-        },
-      ],
+          ts: ["test2.ts"]
+        }
+      ]
     });
 
     const paths = build.extractPaths();
@@ -260,22 +260,22 @@ describe("extractPaths", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: ["test1.ts"],
+          ts: ["test1.ts"]
         },
         {
-          ts: ["test2.ts", "test3.ts"],
-        },
+          ts: ["test2.ts", "test3.ts"]
+        }
       ],
       background: {
-        service_worker: "src/test1.ts",
+        service_worker: "src/test1.ts"
       },
       action: {
-        default_popup: "popup-with-stylesheet.html",
+        default_popup: "popup-with-stylesheet.html"
       },
       options_page: "optionsPage.html",
       options_ui: {
-        page: "optionsUI.html",
-      },
+        page: "optionsUI.html"
+      }
     });
 
     const paths = build.extractPaths();
@@ -323,7 +323,7 @@ describe("parseManifest", () => {
   test("test with no additional config", async () => {
     build.manifest = defineManifest({
       name: "test",
-      version: "0.0.1",
+      version: "0.0.1"
     });
 
     await build.parseManifest();
@@ -336,8 +336,8 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       action: {
-        default_popup: popupTest,
-      },
+        default_popup: popupTest
+      }
     });
 
     await build.parseManifest();
@@ -347,7 +347,7 @@ describe("parseManifest", () => {
       entrypoints: [popupTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.action?.default_popup).toBe("popup.html");
   });
@@ -356,7 +356,7 @@ describe("parseManifest", () => {
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
-      options_page: optionsPageTest,
+      options_page: optionsPageTest
     });
 
     await build.parseManifest();
@@ -366,7 +366,7 @@ describe("parseManifest", () => {
       entrypoints: [optionsPageTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.options_page).toBe("optionsPage.html");
   });
@@ -376,8 +376,8 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       options_ui: {
-        page: optionsUiTest,
-      },
+        page: optionsUiTest
+      }
     });
 
     await build.parseManifest();
@@ -387,7 +387,7 @@ describe("parseManifest", () => {
       entrypoints: [optionsUiTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
   });
@@ -397,8 +397,8 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: tsTest1,
-      },
+        service_worker: tsTest1
+      }
     });
 
     await build.parseManifest();
@@ -408,7 +408,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
   });
@@ -419,9 +419,9 @@ describe("parseManifest", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: [tsTest1],
-        },
-      ],
+          ts: [tsTest1]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -431,7 +431,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -444,13 +444,13 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: tsTest1,
+        service_worker: tsTest1
       },
       content_scripts: [
         {
-          ts: [tsTest2],
-        },
-      ],
+          ts: [tsTest2]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -460,7 +460,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -475,9 +475,9 @@ describe("parseManifest", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: [tsTest1, tsTest2],
-        },
-      ],
+          ts: [tsTest1, tsTest2]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -487,7 +487,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -502,12 +502,12 @@ describe("parseManifest", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: [tsTest1],
+          ts: [tsTest1]
         },
         {
-          ts: [tsTest2],
-        },
-      ],
+          ts: [tsTest2]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -517,7 +517,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -527,34 +527,13 @@ describe("parseManifest", () => {
     expect(js2[0]).toBe("test2.js");
   });
 
-  test("test with popup info", async () => {
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      action: {
-        default_popup: popupTest,
-      },
-    });
-
-    await build.parseManifest();
-
-    expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popupTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
-    });
-    expect(build.manifest.action?.default_popup).toBe("popup.html");
-  });
-
   test("test with popup with script and link tags", async () => {
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       action: {
-        default_popup: popupWithStylesheetTest,
-      },
+        default_popup: popupWithStylesheetTest
+      }
     });
 
     await build.parseManifest();
@@ -564,51 +543,11 @@ describe("parseManifest", () => {
       entrypoints: [popupWithStylesheetTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html"
     );
-  });
-
-  test("test with options_page info", async () => {
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      options_page: optionsPageTest,
-    });
-
-    await build.parseManifest();
-
-    expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsPageTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
-    });
-    expect(build.manifest.options_page).toBe("optionsPage.html");
-  });
-
-  test("test with options_ui info", async () => {
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      options_ui: {
-        page: optionsUiTest,
-      },
-    });
-
-    await build.parseManifest();
-
-    expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsUiTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
-    });
-    expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
   });
 
   test("test two properties pointing to the same file", async () => {
@@ -616,13 +555,13 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: tsTest1,
+        service_worker: tsTest1
       },
       content_scripts: [
         {
-          ts: [tsTest1],
-        },
-      ],
+          ts: [tsTest1]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -632,7 +571,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -646,13 +585,13 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: tsTest1,
+        service_worker: tsTest1
       },
       content_scripts: [
         {
-          ts: [tsTest1, tsTest2],
-        },
-      ],
+          ts: [tsTest1, tsTest2]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -662,14 +601,14 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
     const js = contentScripts[0].js as string[];
     expect(js[0]).toBe("test1.js");
     expect(js[1]).toBe("test2.js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
   });
 
   test("test two properties pointing to the same file and multiple content_scripts", async () => {
@@ -677,16 +616,16 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: tsTest1,
+        service_worker: tsTest1
       },
       content_scripts: [
         {
-          ts: [tsTest1],
+          ts: [tsTest1]
         },
         {
-          ts: [tsTest2],
-        },
-      ],
+          ts: [tsTest2]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -696,7 +635,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -712,16 +651,16 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: tsTest1,
+        service_worker: tsTest1
       },
       content_scripts: [
         {
-          ts: [tsTest2, tsTest3],
+          ts: [tsTest2, tsTest3]
         },
         {
-          ts: [tsTest3, tsTest2],
-        },
-      ],
+          ts: [tsTest3, tsTest2]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -731,7 +670,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest2, tsTest3, tsTest3, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -749,12 +688,12 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       action: {
-        default_popup: popupWithStylesheetTest,
+        default_popup: popupWithStylesheetTest
       },
       options_page: optionsPageWithStylesheetTest,
       options_ui: {
-        page: optionsUiWithStylesheetTest,
-      },
+        page: optionsUiWithStylesheetTest
+      }
     });
 
     await build.parseManifest();
@@ -764,11 +703,11 @@ describe("parseManifest", () => {
       entrypoints: [
         popupWithStylesheetTest,
         optionsPageWithStylesheetTest,
-        optionsUiWithStylesheetTest,
+        optionsUiWithStylesheetTest
       ],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html"
@@ -810,21 +749,21 @@ describe("parseManifest", () => {
       name: "test",
       version: "0.0.1",
       background: {
-        service_worker: tsTest1,
+        service_worker: tsTest1
       },
       action: {
-        default_popup: popupTest,
+        default_popup: popupTest
       },
       options_page: optionsPageTest,
       options_ui: {
-        page: optionsUiTest,
+        page: optionsUiTest
       },
       content_scripts: [
         {
           ts: [tsTest2],
-          css: [cssTest1],
-        },
-      ],
+          css: [cssTest1]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -837,11 +776,11 @@ describe("parseManifest", () => {
         optionsPageTest,
         optionsUiTest,
         tsTest2,
-        cssTest1,
+        cssTest1
       ],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -895,7 +834,7 @@ describe("writeManifest", () => {
   test("test with minimal config", async () => {
     build.manifest = defineManifest({
       name: "test",
-      version: "0.0.1",
+      version: "0.0.1"
     });
 
     await build.writeManifest();
@@ -914,9 +853,9 @@ describe("writeManifest", () => {
       version: "0.0.1",
       content_scripts: [
         {
-          ts: [tsTest1],
-        },
-      ],
+          ts: [tsTest1]
+        }
+      ]
     });
 
     await build.parseManifest();
@@ -939,8 +878,8 @@ describe("writeManifest", () => {
       name: "test",
       version: "0.0.1",
       icons: {
-        16: img16,
-      },
+        16: img16
+      }
     });
 
     await build.parseManifest();
@@ -951,7 +890,7 @@ describe("writeManifest", () => {
       entrypoints: [img16],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
@@ -968,7 +907,7 @@ describe("writeManifest", () => {
       "test/resources/icons/16.png",
       "test/resources/icons/32.png",
       "test/resources/icons/48.png",
-      "test/resources/icons/128.png",
+      "test/resources/icons/128.png"
     ]);
     build.manifest = defineManifest({
       name: "test",
@@ -977,8 +916,8 @@ describe("writeManifest", () => {
         16: img16,
         32: img32,
         48: img48,
-        128: img128,
-      },
+        128: img128
+      }
     });
 
     await build.parseManifest();
@@ -989,7 +928,7 @@ describe("writeManifest", () => {
       entrypoints: [img16, img32, img48, img128],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(Bun.write).toHaveBeenCalledTimes(5);
     const manifest: FullManifest = await Bun.file(
@@ -1016,8 +955,8 @@ describe("writeManifest", () => {
       name: "test",
       version: "0.0.1",
       icons: {
-        16: testImg16,
-      },
+        16: testImg16
+      }
     });
 
     await build.parseManifest();
@@ -1028,7 +967,7 @@ describe("writeManifest", () => {
       entrypoints: [testImg16],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      naming: "[dir]/[name].[ext]"
     });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
@@ -1062,42 +1001,12 @@ describe("parse", () => {
   });
 
   test("test with manifest, but no public dir", async () => {
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      background: {
-        service_worker: tsTest1,
-      },
-    });
-
-    await build.parse();
-
-    expect(build.parseManifest).toHaveBeenCalledTimes(1);
-    expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
-    ).json();
-    expect(manifest.background?.service_worker).toBe("test1.js");
+    await testWrittenManifest();
   });
 
   test("test with manifest, but empty public dir", async () => {
     await mkdir(publicFolder);
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      background: {
-        service_worker: tsTest1,
-      },
-    });
-
-    await build.parse();
-
-    expect(build.parseManifest).toHaveBeenCalledTimes(1);
-    expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
-    ).json();
-    expect(manifest.background?.service_worker).toBe("test1.js");
+    await testWrittenManifest();
   });
 
   test("test with basic manifest and public folder", async () => {
@@ -1106,7 +1015,7 @@ describe("parse", () => {
       "test/resources/icons/16.png",
       "test/resources/icons/32.png",
       "test/resources/icons/48.png",
-      "test/resources/icons/128.png",
+      "test/resources/icons/128.png"
     ]);
     build.manifest = defineManifest({
       name: "test",
@@ -1115,8 +1024,8 @@ describe("parse", () => {
         16: img16,
         32: img32,
         48: img48,
-        128: img128,
-      },
+        128: img128
+      }
     });
 
     await build.parse();
@@ -1159,4 +1068,23 @@ async function createTestPublicFolder(publicFolder: string, files: string[]) {
     );
     await Bun.write(outDir, inputFile);
   }
+}
+
+async function testWrittenManifest() {
+  build.manifest = defineManifest({
+    name: "test",
+    version: "0.0.1",
+    background: {
+      service_worker: tsTest1
+    }
+  });
+
+  await build.parse();
+
+  expect(build.parseManifest).toHaveBeenCalledTimes(1);
+  expect(build.writeManifest).toHaveBeenCalledTimes(1);
+  const manifest: FullManifest = await Bun.file(
+    resolve(build.config.outdir, "manifest.json")
+  ).json();
+  expect(manifest.background?.service_worker).toBe("test1.js");
 }

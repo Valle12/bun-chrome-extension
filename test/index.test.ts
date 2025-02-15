@@ -4,7 +4,7 @@ import { readdir, rm } from "fs/promises";
 import { resolve } from "path";
 import { Index } from "../index";
 
-describe("index.ts", () => {
+describe("composeTemplate.ts", () => {
   beforeEach(() => {
     spyOn(inquirer, "input").mockResolvedValue("test-project");
     spyOn(Bun, "file");

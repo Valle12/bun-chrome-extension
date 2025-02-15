@@ -4,8 +4,8 @@ export type OnlyKnown<T> = {
   [K in keyof T as string extends K
     ? never
     : number extends K
-    ? never
-    : K]: T[K];
+      ? never
+      : K]: T[K];
 };
 
 // Manifest
@@ -52,7 +52,7 @@ export type Manifest = Omit<FullManifest, "manifest_version">;
 export function defineManifest(manifest: Manifest): FullManifest {
   return {
     manifest_version: 3,
-    ...manifest,
+    ...manifest
   };
 }
 
@@ -86,3 +86,9 @@ export type BCEConfig = Omit<
 export function defineConfig(config: BCEConfig): BCEConfig {
   return config;
 }
+
+// WebSocket
+export type WebSocketType = "reload" | "close";
+
+// Chrome Messaging
+export type ChromeMessage = "activate"
