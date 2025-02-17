@@ -5,6 +5,7 @@ export class Connection {
   connected = false;
   interval = 2000;
 
+  // TODO Check if i can remove one of the simple conditions, preferably connected
   async connect() {
     if (this.ws || this.connected) return;
 
