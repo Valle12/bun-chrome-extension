@@ -20,15 +20,20 @@ export class BCE {
     const manifestModule = await import(resolve(process.cwd(), "manifest.ts"));
     const manifest: FullManifest = manifestModule.manifest;
     const build = new Build(manifest, config);
-    if (process.argv.length === 3 && process.argv[2] === "--dev") await build.initDev();
+    if (process.argv.length === 3 && process.argv[2] === "--dev")
+      await build.initDev();
     await build.parse();
     console.log("Build completed!");
   }
 }
 
 export async function main() {
-  const bce = new BCE();
-  await bce.init();
+  if (Bun.env.TEST === "false") {
+    const bce = new BCE();
+    await bce.init();
+  } else {
+    console.log("TEST");
+  }
 }
 
 if (import.meta.path === Bun.main) {

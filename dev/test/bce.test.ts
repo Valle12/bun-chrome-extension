@@ -37,7 +37,6 @@ describe("init", async () => {
     const dist = resolve(import.meta.dir, "..", "dist");
     const manifest = resolve(import.meta.dir, "resources/manifest.ts");
 
-    // noinspection TypeScriptValidateTypes
     spyOn(await import("path"), "resolve").mockImplementation((...args) => {
       if (args.includes("manifest.ts")) return manifest;
       return dist;
@@ -53,7 +52,7 @@ describe("init", async () => {
         name: "Test",
         version: "0.0.1",
       },
-      undefined,
+      undefined
     );
   });
 
@@ -74,12 +73,12 @@ describe("init", async () => {
         minify: false,
         sourcemap: "linked",
         outdir: "dist",
-        public: "public",
-      },
+      }
     );
   });
 
   test("test if init will be called, when main is called", async () => {
+    Bun.env.TEST = "false";
     await mockResolve();
     spyOn(BCE.prototype, "init");
     spyOn(Bun, "file");
@@ -99,9 +98,24 @@ describe("init", async () => {
         minify: false,
         sourcemap: "linked",
         outdir: "dist",
-        public: "public",
-      },
+      }
     );
+  });
+});
+
+describe("bce.ts", () => {
+  test("test if main will be called if file is executed", async () => {
+    Bun.env.TEST = "true";
+
+    const proc = Bun.spawn({
+      cmd: ["bun", "bce.ts"],
+      cwd: resolve(import.meta.dir, ".."),
+    });
+    const exitCode = await proc.exited;
+    const text = await new Response(proc.stdout).text();
+
+    expect(exitCode).toBe(0);
+    expect(text).toBe("TEST\n");
   });
 });
 
@@ -109,7 +123,6 @@ async function mockResolve() {
   const dist = resolve(import.meta.dir, "..", "dist");
   const manifest = resolve(import.meta.dir, "resources/manifest.ts");
   const config = resolve(import.meta.dir, "resources/bce.config.ts");
-  // noinspection TypeScriptValidateTypes
   spyOn(await import("path"), "resolve").mockImplementation((...args) => {
     if (args.includes("manifest.ts")) return manifest;
     if (args.includes("bce.config.ts")) return config;
