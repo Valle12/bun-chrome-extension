@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 import { input } from "@inquirer/prompts";
-import { mkdir, readdir, rm } from "fs/promises";
+import { readdir, rm } from "fs/promises";
 import { resolve } from "path";
 
 export class Index {
   PROJECT_CONST = "bun-project-const";
   PROJECT_FOLDER = "project";
-  IGNORE_FILES = ["node_modules", "bun.lockb", "test", "dist"];
+  IGNORE_FILES = ["node_modules", "bun.lock", "test", "dist"];
   REPLACE_FILES = ["README.md", "package.json", "manifest.ts"];
   bunx = false;
   metaDir = import.meta.dir;
@@ -22,22 +22,37 @@ export class Index {
 
     if (this.bunx) this.metaDir = resolve(process.cwd(), answer);
 
+    console.log("Setting up project...");
+
     // clone project folder
-    await Bun.spawn([
-      "git",
-      "clone",
-      "--no-checkout",
-      "https://github.com/Valle12/bun-chrome-extension.git",
-      answer,
-    ]).exited;
-    await Bun.spawn(["git", "sparse-checkout", "init", "--no-cone"], {
-      cwd: answer,
+    await Bun.spawn({
+      cmd: [
+        "git",
+        "clone",
+        "--no-checkout",
+        "https://github.com/Valle12/bun-chrome-extension.git",
+        answer,
+      ],
+      stdout: "ignore",
+      stderr: "ignore",
     }).exited;
-    await Bun.spawn(["git", "sparse-checkout", "set", "project"], {
+    await Bun.spawn({
+      cmd: ["git", "sparse-checkout", "init", "--no-cone"],
       cwd: answer,
+      stdout: "ignore",
+      stderr: "ignore",
     }).exited;
-    await Bun.spawn(["git", "checkout", "master"], {
+    await Bun.spawn({
+      cmd: ["git", "sparse-checkout", "set", "project"],
       cwd: answer,
+      stdout: "ignore",
+      stderr: "ignore",
+    }).exited;
+    await Bun.spawn({
+      cmd: ["git", "checkout", "master"],
+      cwd: answer,
+      stdout: "ignore",
+      stderr: "ignore",
     }).exited;
 
     // create local project
@@ -55,7 +70,6 @@ export class Index {
         content = content.replace(this.PROJECT_CONST, answer);
       await Bun.write(resolve(answer, file.name), content);
     }
-    await mkdir(resolve(answer, "public"));
     await rm(resolve(answer, this.PROJECT_FOLDER), {
       recursive: true,
       force: true,
@@ -66,9 +80,14 @@ export class Index {
     });
 
     // install dependencies
-    await Bun.spawn(["bun", "install"], {
+    await Bun.spawn({
+      cmd: ["bun", "install"],
       cwd: answer,
+      stdout: "ignore",
+      stderr: "ignore",
     }).exited;
+
+    console.log("Project setup completed!");
   }
 }
 

@@ -1,3 +1,4 @@
+import type { Serve, Server, ServerWebSocket } from "bun";
 import {
   afterEach,
   beforeEach,
@@ -7,10 +8,17 @@ import {
   spyOn,
   test,
 } from "bun:test";
+import type { FSWatcher } from "fs";
+import * as fs from "fs";
 import { mkdir, readdir, rm } from "fs/promises";
 import { join, relative, resolve } from "path";
 import { Build } from "../build";
-import type { CustomContentScript, FullManifest, Icons } from "../types";
+import type {
+  CustomContentScript,
+  FullManifest,
+  Icons,
+  WebSocketType,
+} from "../types";
 import { defineManifest } from "../types";
 
 let build: Build;
@@ -93,7 +101,8 @@ describe("extractPaths", () => {
       },
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(1);
     const file = build.posixPath(resolve("test1.ts"));
@@ -112,7 +121,8 @@ describe("extractPaths", () => {
       ],
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(1);
     const file = build.posixPath(resolve("test1.ts"));
@@ -132,7 +142,8 @@ describe("extractPaths", () => {
       },
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(1);
     const file = build.posixPath(resolve("popup.html"));
@@ -147,7 +158,8 @@ describe("extractPaths", () => {
       options_page: "optionsPage.html",
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(1);
     const file = build.posixPath(resolve("optionsPage.html"));
@@ -164,7 +176,8 @@ describe("extractPaths", () => {
       },
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(1);
     const file = build.posixPath(resolve("optionsUI.html"));
@@ -186,7 +199,8 @@ describe("extractPaths", () => {
       ],
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(2);
     const file1 = build.posixPath(resolve("src/test1.ts"));
@@ -211,7 +225,8 @@ describe("extractPaths", () => {
       ],
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(2);
     const file1 = build.posixPath(resolve("test1.ts"));
@@ -239,7 +254,8 @@ describe("extractPaths", () => {
       ],
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(2);
     const file1 = build.posixPath(resolve("test1.ts"));
@@ -278,7 +294,8 @@ describe("extractPaths", () => {
       },
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths(paths);
 
     expect(paths.length).toBe(7);
     const file0 = build.posixPath(resolve("test1.ts"));
@@ -313,7 +330,6 @@ describe("parseManifest", () => {
   beforeEach(() => {
     spyOn(Bun, "build");
     spyOn(Bun, "write");
-    spyOn(Array.prototype, "shift");
   });
 
   afterEach(() => {
@@ -329,6 +345,7 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).not.toHaveBeenCalled();
+    expect(build.manifest.background?.type).toBeUndefined();
   });
 
   test("test with popup info", async () => {
@@ -347,7 +364,7 @@ describe("parseManifest", () => {
       entrypoints: [popupTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.action?.default_popup).toBe("popup.html");
   });
@@ -366,7 +383,7 @@ describe("parseManifest", () => {
       entrypoints: [optionsPageTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.options_page).toBe("optionsPage.html");
   });
@@ -387,7 +404,7 @@ describe("parseManifest", () => {
       entrypoints: [optionsUiTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
   });
@@ -408,9 +425,10 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.type).toBe("module");
   });
 
   test("test with content_scripts info", async () => {
@@ -431,7 +449,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -460,7 +478,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -487,7 +505,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -517,7 +535,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -525,27 +543,6 @@ describe("parseManifest", () => {
     expect(js[0]).toBe("test1.js");
     const js2 = contentScripts[1].js as string[];
     expect(js2[0]).toBe("test2.js");
-  });
-
-  test("test with popup info", async () => {
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      action: {
-        default_popup: popupTest,
-      },
-    });
-
-    await build.parseManifest();
-
-    expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popupTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
-    });
-    expect(build.manifest.action?.default_popup).toBe("popup.html");
   });
 
   test("test with popup with script and link tags", async () => {
@@ -564,51 +561,11 @@ describe("parseManifest", () => {
       entrypoints: [popupWithStylesheetTest],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html"
     );
-  });
-
-  test("test with options_page info", async () => {
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      options_page: optionsPageTest,
-    });
-
-    await build.parseManifest();
-
-    expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsPageTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
-    });
-    expect(build.manifest.options_page).toBe("optionsPage.html");
-  });
-
-  test("test with options_ui info", async () => {
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      options_ui: {
-        page: optionsUiTest,
-      },
-    });
-
-    await build.parseManifest();
-
-    expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsUiTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
-    });
-    expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
   });
 
   test("test two properties pointing to the same file", async () => {
@@ -632,7 +589,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest1],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -662,14 +619,14 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
-    expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
     const js = contentScripts[0].js as string[];
     expect(js[0]).toBe("test1.js");
     expect(js[1]).toBe("test2.js");
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
   });
 
   test("test two properties pointing to the same file and multiple content_scripts", async () => {
@@ -696,7 +653,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest1, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -731,7 +688,7 @@ describe("parseManifest", () => {
       entrypoints: [tsTest1, tsTest2, tsTest3, tsTest3, tsTest2],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -768,7 +725,7 @@ describe("parseManifest", () => {
       ],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html"
@@ -803,6 +760,27 @@ describe("parseManifest", () => {
     expect(optionsUI).toContain("chunk-");
     expect(optionsUI).toContain(".js");
     expect(optionsUI).toContain(".css");
+  });
+
+  test("test with entrypoint not found", async () => {
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      background: {
+        service_worker: tsTest1,
+      },
+    });
+    spyOn(Array.prototype, "findIndex").mockReturnValue(-1);
+    spyOn(console, "error").mockImplementation(() => {});
+
+    await build.parseManifest();
+
+    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(console.error).toHaveBeenCalledWith(
+      "Could not find entrypoint for output",
+      [tsTest1],
+      expect.anything()
+    );
   });
 
   test("test with everything", async () => {
@@ -841,7 +819,7 @@ describe("parseManifest", () => {
       ],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -951,7 +929,7 @@ describe("writeManifest", () => {
       entrypoints: [img16],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
@@ -989,7 +967,7 @@ describe("writeManifest", () => {
       entrypoints: [img16, img32, img48, img128],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(Bun.write).toHaveBeenCalledTimes(5);
     const manifest: FullManifest = await Bun.file(
@@ -1028,7 +1006,7 @@ describe("writeManifest", () => {
       entrypoints: [testImg16],
       minify: build.config.minify,
       outdir: build.config.outdir,
-      naming: "[dir]/[name].[ext]",
+      sourcemap: build.config.sourcemap,
     });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
@@ -1062,42 +1040,12 @@ describe("parse", () => {
   });
 
   test("test with manifest, but no public dir", async () => {
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      background: {
-        service_worker: tsTest1,
-      },
-    });
-
-    await build.parse();
-
-    expect(build.parseManifest).toHaveBeenCalledTimes(1);
-    expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
-    ).json();
-    expect(manifest.background?.service_worker).toBe("test1.js");
+    await testWrittenManifest();
   });
 
   test("test with manifest, but empty public dir", async () => {
     await mkdir(publicFolder);
-    build.manifest = defineManifest({
-      name: "test",
-      version: "0.0.1",
-      background: {
-        service_worker: tsTest1,
-      },
-    });
-
-    await build.parse();
-
-    expect(build.parseManifest).toHaveBeenCalledTimes(1);
-    expect(build.writeManifest).toHaveBeenCalledTimes(1);
-    const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
-    ).json();
-    expect(manifest.background?.service_worker).toBe("test1.js");
+    await testWrittenManifest();
   });
 
   test("test with basic manifest and public folder", async () => {
@@ -1129,7 +1077,7 @@ describe("parse", () => {
 });
 
 describe("relativePosixPath", () => {
-  test("test from random path to posix", () => {
+  test("test from random path to relative posix", () => {
     const relativePath = build.relativePosixPath(
       build.config.outdir,
       build.posixPath(resolve(build.config.outdir, "test", "test"))
@@ -1138,13 +1086,315 @@ describe("relativePosixPath", () => {
     expect(relativePath).toBe("test/test");
   });
 
-  test("test from posix to posix", () => {
+  test("test from posix to relative posix", () => {
     const relativePath = build.relativePosixPath(
       build.posixPath(build.config.outdir),
       build.posixPath(resolve(build.config.outdir, "test", "test"))
     );
 
     expect(relativePath).toBe("test/test");
+  });
+});
+
+describe("posixPath", () => {
+  test("test from random path to posix", () => {
+    const posixPath = build.posixPath("test/test\\test");
+
+    expect(posixPath).toBe("test/test/test");
+  });
+
+  test("test from posix to posix", () => {
+    const posixPath = build.posixPath("test/test");
+
+    expect(posixPath).toBe("test/test");
+  });
+});
+
+describe("setServiceWorker", () => {
+  beforeEach(() => {
+    spyOn(console, "log").mockImplementation(() => {});
+    spyOn(Bun, "write").mockImplementation(() => Promise.resolve(1));
+    spyOn(Bun, "file");
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("test with no background info, so creating connection and keepAlive as background info", async () => {
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+    });
+
+    await build.setServiceWorker();
+
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith(
+      "No background service worker found, creating one..."
+    );
+    expect(Bun.file).toHaveBeenCalledTimes(1);
+    expect(Bun.file).toHaveBeenCalledWith(resolve(cwd, "composeTemplate.ts"));
+    const compose = resolve(cwd, "compose.ts");
+    expect(Bun.write).toHaveBeenCalledTimes(1);
+    expect(Bun.write).toHaveBeenCalledWith(compose, expect.anything());
+    expect(build.manifest.background).toEqual({
+      service_worker: compose,
+      type: "module",
+    });
+  });
+
+  test("test with invalid service_worker, so creating connection and keepAlive as background info", async () => {
+    build.originalServiceWorker = "test";
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      background: {
+        service_worker: "test",
+      },
+    });
+
+    await build.setServiceWorker();
+
+    expect(Bun.file).toHaveBeenCalledTimes(2);
+    expect(Bun.file).toHaveBeenNthCalledWith(1, resolve(build.cwd, "test"));
+    expect(Bun.file).toHaveBeenNthCalledWith(
+      2,
+      resolve(cwd, "composeTemplate.ts")
+    );
+    expect(build.manifest.background).toEqual({
+      service_worker: resolve(cwd, "compose.ts"),
+      type: "module",
+    });
+  });
+
+  test("test with service_worker, pointing to an existing file, creating compose", async () => {
+    spyOn(build, "posixPath");
+
+    build.originalServiceWorker = tsTest1;
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      background: {
+        service_worker: tsTest1,
+      },
+    });
+
+    await build.setServiceWorker();
+
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith(
+      "Background service worker found, creating compose..."
+    );
+    expect(build.posixPath).toHaveBeenCalledTimes(1);
+    expect(build.posixPath).toHaveBeenCalledWith(resolve(cwd, tsTest1));
+    const compose = resolve(cwd, "compose.ts");
+    expect(Bun.write).toHaveBeenCalledTimes(1);
+    expect(Bun.write).toHaveBeenCalledWith(compose, expect.any(String));
+    expect(build.manifest.background).toEqual({
+      service_worker: compose,
+      type: "module",
+    });
+  });
+});
+
+describe("startServer", () => {
+  let capturedOptions = {} as Serve<WebSocketType>;
+
+  beforeEach(() => {
+    spyOn(Bun, "serve").mockImplementation(options => {
+      capturedOptions = options as Serve<WebSocketType>;
+      return {} as any;
+    });
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("test fetch with unsuccessful upgrade", async () => {
+    const reqMock = {} as Request;
+    const serverMock = {
+      upgrade: mock(() => false),
+    } as unknown as Server;
+
+    build.startServer();
+
+    const response = capturedOptions.fetch.call(
+      serverMock,
+      reqMock,
+      serverMock
+    ) as Response;
+    expect(serverMock.upgrade).toHaveBeenCalledTimes(1);
+    expect(await response.text()).toBe("Upgrade failed!");
+    expect(response.status).toBe(500);
+  });
+
+  test("test fetch with successful upgrade", () => {
+    const reqMock = {} as Request;
+    const serverMock = {
+      upgrade: mock(() => true),
+    } as unknown as Server;
+
+    build.startServer();
+
+    const response = capturedOptions.fetch.call(
+      serverMock,
+      reqMock,
+      serverMock
+    );
+    expect(serverMock.upgrade).toHaveBeenCalledTimes(1);
+    expect(typeof response).toBe("undefined");
+  });
+});
+
+describe("openWebsocket", () => {
+  let ws: ServerWebSocket<WebSocketType>;
+
+  beforeEach(() => {
+    ws = {
+      send: mock(() => {}),
+    } as unknown as ServerWebSocket<WebSocketType>;
+    spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("test on first connection", () => {
+    expect(build.firstConnect).toBeTrue();
+
+    build.openWebsocket(ws);
+
+    expect(build.ws).toEqual(ws);
+    expect(build.firstConnect).toBeFalse();
+    expect(ws.send).toHaveBeenCalledTimes(1);
+    expect(ws.send).toHaveBeenCalledWith("reload");
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith("Connection established!");
+  });
+
+  test("test on second connection", () => {
+    build.firstConnect = false;
+    build.openWebsocket(ws);
+
+    expect(build.ws).toEqual(ws);
+    expect(build.firstConnect).toBeFalse();
+    expect(ws.send).toHaveBeenCalledTimes(0);
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith("Connection established!");
+  });
+});
+
+describe("initDev", () => {
+  let listener: Function;
+
+  beforeEach(() => {
+    spyOn(build, "setServiceWorker").mockImplementation(() =>
+      Promise.resolve()
+    );
+    spyOn(build, "startServer").mockImplementation(() => {});
+    spyOn(console, "log").mockImplementation(() => {});
+    spyOn(fs, "watch").mockImplementation((...args: any[]) => {
+      for (const arg of args) {
+        if (typeof arg === "function") {
+          listener = arg;
+          break;
+        }
+      }
+
+      return {
+        close: () => {},
+      } as FSWatcher;
+    });
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test("test with updated file in outdir", async () => {
+    await build.initDev();
+
+    listener("change", build.config.outdir);
+
+    expect(build.setServiceWorker).toHaveBeenCalledTimes(1);
+    expect(build.startServer).toHaveBeenCalledTimes(1);
+    expect(fs.watch).toHaveBeenCalledTimes(1);
+    expect(fs.watch).toHaveBeenCalledWith(
+      build.cwd,
+      { recursive: true },
+      listener
+    );
+    expect(console.log).toHaveBeenCalledTimes(0);
+  });
+
+  test("test with updated file in node_modules", async () => {
+    await build.initDev();
+
+    listener("change", "node_modules");
+
+    expect(build.setServiceWorker).toHaveBeenCalledTimes(1);
+    expect(build.startServer).toHaveBeenCalledTimes(1);
+    expect(fs.watch).toHaveBeenCalledTimes(1);
+    expect(fs.watch).toHaveBeenCalledWith(
+      build.cwd,
+      { recursive: true },
+      listener
+    );
+    expect(console.log).toHaveBeenCalledTimes(0);
+  });
+
+  // Replace setTimeout with a mock to extract the callback
+  // Save callback and call it later -> Code in braces will run
+  // Do assertions and reset mock afterwards
+  test("test with updated file", async () => {
+    const original = globalThis.setTimeout;
+    let handler = {} as (...args: any[]) => Promise<void>;
+    build.ws = {
+      send: mock(),
+    } as unknown as ServerWebSocket<WebSocketType>;
+    globalThis.setTimeout = Object.assign(
+      mock((cb: (...args: any[]) => Promise<void>, _delay, ..._args) => {
+        handler = cb;
+        return 0;
+      })
+    );
+    spyOn(build, "parse").mockImplementation(() => Promise.resolve());
+    spyOn(console, "clear").mockImplementation(() => {});
+
+    await build.initDev();
+
+    listener("change", tsTest1);
+    await handler();
+
+    expect(console.clear).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith("Rebuild project...");
+    expect(build.setServiceWorker).toHaveBeenCalledTimes(2);
+    expect(build.startServer).toHaveBeenCalledTimes(1);
+    expect(build.parse).toHaveBeenCalledTimes(1);
+    expect(build.ws.send).toHaveBeenCalledTimes(1);
+    expect(build.ws.send).toHaveBeenCalledWith("reload");
+
+    globalThis.setTimeout = original;
+  });
+
+  test("test if shutdown runs", async () => {
+    let handler = {} as (...args: any[]) => void;
+    spyOn(process, "exit").mockImplementation(() => undefined as never);
+    spyOn(process, "on").mockImplementation((_event, cb) => {
+      handler = cb;
+      return {} as NodeJS.Process;
+    });
+
+    await build.initDev();
+    handler();
+
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith("Closing watcher...");
+    expect(process.exit).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -1159,4 +1409,23 @@ async function createTestPublicFolder(publicFolder: string, files: string[]) {
     );
     await Bun.write(outDir, inputFile);
   }
+}
+
+async function testWrittenManifest() {
+  build.manifest = defineManifest({
+    name: "test",
+    version: "0.0.1",
+    background: {
+      service_worker: tsTest1,
+    },
+  });
+
+  await build.parse();
+
+  expect(build.parseManifest).toHaveBeenCalledTimes(1);
+  expect(build.writeManifest).toHaveBeenCalledTimes(1);
+  const manifest: FullManifest = await Bun.file(
+    resolve(build.config.outdir, "manifest.json")
+  ).json();
+  expect(manifest.background?.service_worker).toBe("test1.js");
 }

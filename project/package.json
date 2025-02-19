@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "bce",
-    "dev": "echo not implemented"
+    "dev": "bce --dev"
   },
   "devDependencies": {
     "@types/bun": "latest",

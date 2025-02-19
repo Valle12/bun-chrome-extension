@@ -9,14 +9,16 @@
   ],
   "license": "MIT",
   "type": "module",
-  "main": "index.ts",
+  "main": "bce.ts",
   "bin": {
     "bce": "bce.ts"
   },
   "files": [
     "bce.ts",
     "build.ts",
-    "index.ts",
+    "composeTemplate.ts",
+    "connection.ts",
+    "keepAlive.ts",
     "types.ts"
   ],
   "dependencies": {

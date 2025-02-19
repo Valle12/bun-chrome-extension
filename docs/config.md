@@ -3,7 +3,8 @@
 ## File
 
 You can create your own config file to overwrite the default values used for bundling and folder locations.
-For that you need to create a file named **bce.config.ts**, where you can also use a helper function similar to the [Manifest](/manifest) to declare your properties with Intellisense.
+For that you need to create a file named **bce.config.ts**, where you can also use a helper function similar to
+the [Manifest](/manifest) to declare your properties with Intellisense.
 
 ```ts
 import { defineConfig } from "bun-chrome-extension-dev";
@@ -30,8 +31,12 @@ To granularly enable certain minifications:
 ```ts
 minify: {
   whitespace: true,
-  identifiers: true,
-  syntax: true
+    identifiers
+:
+  true,
+    syntax
+:
+  true
 }
 ```
 
@@ -42,15 +47,6 @@ Default **dist**
 
 ```ts
 outdir: "dist";
-```
-
-### **public**
-
-The directory where assets will be stored.
-Default **public**
-
-```ts
-public: "public";
 ```
 
 ### **sourcemap**

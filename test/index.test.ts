@@ -4,7 +4,7 @@ import { readdir, rm } from "fs/promises";
 import { resolve } from "path";
 import { Index } from "../index";
 
-describe("index.ts", () => {
+describe("composeTemplate.ts", () => {
   beforeEach(() => {
     spyOn(inquirer, "input").mockResolvedValue("test-project");
     spyOn(Bun, "file");
@@ -41,6 +41,6 @@ describe("index.ts", () => {
     expect(manifestFile).toMatch(`name: "test-project"`);
 
     const files = await readdir(resolve("test-project"));
-    expect(files.length).toBe(6);
+    expect(files.length).toBe(5);
   });
 });

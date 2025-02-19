@@ -1,16 +1,23 @@
+import type { ServerWebSocket } from "bun";
+import { watch } from "fs";
 import { extname, relative, resolve } from "path";
 import { posix } from "path/posix";
-import type { BCEConfig, FullManifest } from "./types";
+import type { BCEConfig, FullManifest, WebSocketType } from "./types";
 
 export class Build {
   manifest: FullManifest;
   config: Required<BCEConfig>;
+  ws!: ServerWebSocket<WebSocketType>;
   cwd = process.cwd();
   ignoreKeys = ["version"];
   icons = [".png", ".bmp", ".gif", ".ico", ".jpeg"];
+  originalServiceWorker: string | undefined;
+  compose = resolve(import.meta.dir, "compose.ts");
+  firstConnect = true;
 
   constructor(manifest: FullManifest, config: BCEConfig = {}) {
     this.manifest = manifest;
+    this.originalServiceWorker = this.manifest.background?.service_worker;
 
     const defaultConfig: Required<BCEConfig> = {
       minify: true,
@@ -25,27 +32,112 @@ export class Build {
     };
   }
 
+  async setServiceWorker() {
+    if (
+      !this.manifest.background ||
+      !(await Bun.file(
+        resolve(this.cwd, this.originalServiceWorker as string)
+      ).exists())
+    ) {
+      console.log("No background service worker found, creating one...");
+      const composeFile = Bun.file(
+        resolve(import.meta.dir, "composeTemplate.ts")
+      );
+      await Bun.write(this.compose, composeFile);
+      this.manifest.background = {
+        service_worker: this.compose,
+        type: "module",
+      };
+    } else {
+      console.log("Background service worker found, creating compose...");
+      let composeContent = await Bun.file(
+        resolve(import.meta.dir, "composeTemplate.ts")
+      ).text();
+      composeContent = composeContent.replaceAll(
+        "// IMPORT // Do not remove!",
+        `import "${this.posixPath(resolve(this.cwd, this.originalServiceWorker as string))}";`
+      );
+      await Bun.write(this.compose, composeContent);
+      this.manifest.background = {
+        service_worker: this.compose,
+        type: "module",
+      };
+    }
+  }
+
+  openWebsocket(ws: ServerWebSocket<WebSocketType>) {
+    this.ws = ws;
+
+    if (this.firstConnect) {
+      this.firstConnect = false;
+      this.ws.send("reload");
+    }
+
+    console.log("Connection established!");
+  }
+
+  startServer() {
+    Bun.serve<WebSocketType>({
+      fetch(req, server) {
+        if (server.upgrade(req)) return;
+        return new Response("Upgrade failed!", { status: 500 });
+      },
+      websocket: {
+        open: ws => this.openWebsocket(ws),
+        message: () => {},
+      },
+    });
+  }
+
+  async initDev() {
+    await this.setServiceWorker();
+    this.startServer();
+
+    let timeout: Timer;
+    const watcher = watch(this.cwd, { recursive: true }, (_event, filename) => {
+      if (
+        filename === null ||
+        resolve(this.cwd, filename).includes(this.config.outdir) ||
+        filename.includes("node_modules")
+      )
+        return;
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(async () => {
+        console.clear();
+        console.log("Rebuild project...");
+        await this.setServiceWorker();
+        await this.parse();
+        this.ws.send("reload");
+      }, 50);
+    });
+
+    process.on("SIGINT", () => {
+      console.log("Closing watcher...");
+      watcher.close();
+      process.exit();
+    });
+  }
+
   async parse() {
     await this.parseManifest();
     await this.writeManifest();
   }
 
   async parseManifest() {
-    const entrypoints = this.extractPaths();
+    if (this.manifest.background) this.manifest.background.type = "module";
+    const entrypoints: string[] = [];
+    this.extractPaths(entrypoints);
 
     if (entrypoints.length !== 0) {
       const result = await Bun.build({
-        entrypoints,
+        entrypoints: [...entrypoints],
         minify: this.config.minify,
         outdir: this.config.outdir,
-        naming: "[dir]/[name].[ext]",
+        sourcemap: this.config.sourcemap,
       });
 
       let manifestJson = JSON.stringify(this.manifest, (_key, value) => {
-        if (typeof value === "string") {
-          return this.posixPath(value);
-        }
-
+        if (typeof value === "string") return this.posixPath(value);
         return value;
       });
 
@@ -72,13 +164,12 @@ export class Build {
           pathInOutdir = pathInOutdirParts.join("") + extname(pathInOutdir);
         }
 
-        // TODO remove entrypoints from the array, after they have been used
-        const entrypoint = entrypoints.find(entry => {
+        const entrypointIndex = entrypoints.findIndex(entry => {
           entry = entry.replaceAll(".ts", ".js");
           return entry.includes(posix.sep + pathInOutdir);
         });
 
-        if (entrypoint === undefined) {
+        if (entrypointIndex === -1) {
           console.error(
             "Could not find entrypoint for output",
             entrypoints,
@@ -86,6 +177,9 @@ export class Build {
           );
           continue;
         }
+
+        const entrypoint = entrypoints[entrypointIndex];
+        entrypoints.splice(entrypointIndex, 1);
 
         manifestJson = manifestJson.replaceAll(
           entrypoint,
@@ -102,7 +196,7 @@ export class Build {
     await Bun.write(file, content);
   }
 
-  extractPathsRecursive(
+  extractPaths(
     paths: string[] = [],
     currentPath = "",
     obj: any = this.manifest
@@ -110,13 +204,13 @@ export class Build {
     for (let [key, value] of Object.entries(obj)) {
       const prefix = currentPath === "" ? "" : ".";
       if (typeof value === "object") {
-        if (typeof key === "string" && key === "ts") {
+        if (key === "ts") {
           key = "js";
           obj[key] = value;
           delete obj.ts;
         }
 
-        this.extractPathsRecursive(paths, currentPath + prefix + key, value);
+        this.extractPaths(paths, currentPath + prefix + key, value);
       } else if (
         typeof value === "string" &&
         extname(value) &&
@@ -127,12 +221,6 @@ export class Build {
         paths.push(resolvedKey);
       }
     }
-  }
-
-  extractPaths() {
-    const paths: string[] = [];
-    this.extractPathsRecursive(paths);
-    return paths;
   }
 
   relativePosixPath(from: string, to: string) {
