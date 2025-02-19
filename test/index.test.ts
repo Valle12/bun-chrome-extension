@@ -41,6 +41,6 @@ describe("composeTemplate.ts", () => {
     expect(manifestFile).toMatch(`name: "test-project"`);
 
     const files = await readdir(resolve("test-project"));
-    expect(files.length).toBe(6);
+    expect(files.length).toBe(5);
   });
 });

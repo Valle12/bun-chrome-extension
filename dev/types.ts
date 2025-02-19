@@ -52,7 +52,7 @@ export type Manifest = Omit<FullManifest, "manifest_version">;
 export function defineManifest(manifest: Manifest): FullManifest {
   return {
     manifest_version: 3,
-    ...manifest
+    ...manifest,
   };
 }
 
@@ -88,7 +88,7 @@ export function defineConfig(config: BCEConfig): BCEConfig {
 }
 
 // WebSocket
-export type WebSocketType = "reload" | "close";
+export type WebSocketType = "reload";
 
 // Chrome Messaging
-export type ChromeMessage = "activate"
+export type ChromeMessage = "activate";

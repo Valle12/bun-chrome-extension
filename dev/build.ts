@@ -1,13 +1,13 @@
+import type { ServerWebSocket } from "bun";
+import { watch } from "fs";
 import { extname, relative, resolve } from "path";
 import { posix } from "path/posix";
-import { watch } from "fs";
 import type { BCEConfig, FullManifest, WebSocketType } from "./types";
-import type { ServerWebSocket } from "bun";
 
 export class Build {
   manifest: FullManifest;
   config: Required<BCEConfig>;
-  ws: ServerWebSocket<WebSocketType>;
+  ws!: ServerWebSocket<WebSocketType>;
   cwd = process.cwd();
   ignoreKeys = ["version"];
   icons = [".png", ".bmp", ".gif", ".ico", ".jpeg"];
@@ -22,35 +22,58 @@ export class Build {
     const defaultConfig: Required<BCEConfig> = {
       minify: true,
       sourcemap: "none",
-      outdir: resolve(this.cwd, "dist")
+      outdir: resolve(this.cwd, "dist"),
     };
 
     this.config = {
       minify: config.minify ?? defaultConfig.minify,
       sourcemap: config.sourcemap ?? defaultConfig.sourcemap,
-      outdir: resolve(config.outdir ?? defaultConfig.outdir)
+      outdir: resolve(config.outdir ?? defaultConfig.outdir),
     };
   }
 
   async setServiceWorker() {
-    if (!this.manifest.background || this.originalServiceWorker === undefined || !await Bun.file(resolve(this.cwd, this.originalServiceWorker)).exists()) {
+    if (
+      !this.manifest.background ||
+      !(await Bun.file(
+        resolve(this.cwd, this.originalServiceWorker as string)
+      ).exists())
+    ) {
       console.log("No background service worker found, creating one...");
-      const composeFile = Bun.file(resolve(import.meta.dir, "composeTemplate.ts"));
+      const composeFile = Bun.file(
+        resolve(import.meta.dir, "composeTemplate.ts")
+      );
       await Bun.write(this.compose, composeFile);
       this.manifest.background = {
         service_worker: this.compose,
-        type: "module"
+        type: "module",
       };
     } else {
       console.log("Background service worker found, creating compose...");
-      let composeContent = await Bun.file(resolve(import.meta.dir, "composeTemplate.ts")).text();
-      composeContent = composeContent.replaceAll("// IMPORT // Do not remove!", `import "${this.posixPath(resolve(this.cwd, this.originalServiceWorker))}";`);
+      let composeContent = await Bun.file(
+        resolve(import.meta.dir, "composeTemplate.ts")
+      ).text();
+      composeContent = composeContent.replaceAll(
+        "// IMPORT // Do not remove!",
+        `import "${this.posixPath(resolve(this.cwd, this.originalServiceWorker as string))}";`
+      );
       await Bun.write(this.compose, composeContent);
       this.manifest.background = {
         service_worker: this.compose,
-        type: "module"
+        type: "module",
       };
     }
+  }
+
+  openWebsocket(ws: ServerWebSocket<WebSocketType>) {
+    this.ws = ws;
+
+    if (this.firstConnect) {
+      this.firstConnect = false;
+      this.ws.send("reload");
+    }
+
+    console.log("Connection established!");
   }
 
   startServer() {
@@ -60,17 +83,9 @@ export class Build {
         return new Response("Upgrade failed!", { status: 500 });
       },
       websocket: {
-        open: (ws) => {
-          this.ws = ws;
-
-          if (this.firstConnect) {
-            this.firstConnect = false;
-            this.ws.send("reload");
-          }
-
-          console.log("Connection established!");
-        }
-      }
+        open: ws => this.openWebsocket(ws),
+        message: () => {},
+      },
     });
   }
 
@@ -79,8 +94,13 @@ export class Build {
     this.startServer();
 
     let timeout: Timer;
-    const watcher = watch(this.cwd, { recursive: true }, (event, filename) => {
-      if (filename === null || resolve(this.cwd, filename).includes(this.config.outdir) || filename.includes("node_modules")) return;
+    const watcher = watch(this.cwd, { recursive: true }, (_event, filename) => {
+      if (
+        filename === null ||
+        resolve(this.cwd, filename).includes(this.config.outdir) ||
+        filename.includes("node_modules")
+      )
+        return;
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(async () => {
         console.clear();
@@ -105,21 +125,19 @@ export class Build {
 
   async parseManifest() {
     if (this.manifest.background) this.manifest.background.type = "module";
-    const entrypoints = this.extractPaths();
+    const entrypoints: string[] = [];
+    this.extractPaths(entrypoints);
 
     if (entrypoints.length !== 0) {
       const result = await Bun.build({
-        entrypoints,
+        entrypoints: [...entrypoints],
         minify: this.config.minify,
         outdir: this.config.outdir,
-        sourcemap: this.config.sourcemap
+        sourcemap: this.config.sourcemap,
       });
 
       let manifestJson = JSON.stringify(this.manifest, (_key, value) => {
-        if (typeof value === "string") {
-          return this.posixPath(value);
-        }
-
+        if (typeof value === "string") return this.posixPath(value);
         return value;
       });
 
@@ -178,7 +196,7 @@ export class Build {
     await Bun.write(file, content);
   }
 
-  extractPathsRecursive(
+  extractPaths(
     paths: string[] = [],
     currentPath = "",
     obj: any = this.manifest
@@ -192,7 +210,7 @@ export class Build {
           delete obj.ts;
         }
 
-        this.extractPathsRecursive(paths, currentPath + prefix + key, value);
+        this.extractPaths(paths, currentPath + prefix + key, value);
       } else if (
         typeof value === "string" &&
         extname(value) &&
@@ -203,12 +221,6 @@ export class Build {
         paths.push(resolvedKey);
       }
     }
-  }
-
-  extractPaths() {
-    const paths: string[] = [];
-    this.extractPathsRecursive(paths);
-    return paths;
   }
 
   relativePosixPath(from: string, to: string) {

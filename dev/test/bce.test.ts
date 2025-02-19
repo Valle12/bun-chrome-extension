@@ -6,26 +6,35 @@ import {
   mock,
   spyOn,
   test,
+  type Mock,
 } from "bun:test";
+import * as path from "path";
 import { resolve } from "path";
-import { BCE, main } from "../bce";
-import { Build } from "../build";
+import * as build from "../build";
 
-describe("init", async () => {
+describe("bce", async () => {
   const originalBuild = {
-    ...(await import("../build")),
+    ...build,
   };
+  let buildMock = {} as Mock<(...args: any[]) => any>;
+  let parseMock = {} as Mock<(...args: any[]) => any>;
+  let initDevMock = {} as Mock<(...args: any[]) => any>;
 
   beforeEach(async () => {
     await mock.module("../build", () => {
+      parseMock = mock();
+      initDevMock = mock();
+      buildMock = mock(() => {
+        return {
+          parse: parseMock,
+          initDev: initDevMock,
+        };
+      });
       return {
-        Build: mock(() => {
-          return {
-            parse: mock(),
-          };
-        }),
+        Build: buildMock,
       };
     });
+    spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(async () => {
@@ -33,20 +42,13 @@ describe("init", async () => {
     await mock.module("../build", () => originalBuild);
   });
 
-  test("test if basic manifest will be read", async () => {
-    const dist = resolve(import.meta.dir, "..", "dist");
-    const manifest = resolve(import.meta.dir, "resources/manifest.ts");
+  test("test with no config file", async () => {
+    mockResolve();
 
-    spyOn(await import("path"), "resolve").mockImplementation((...args) => {
-      if (args.includes("manifest.ts")) return manifest;
-      return dist;
-    });
+    await import(`../bce?cacheBust=${Date.now()}`);
 
-    const bce = new BCE();
-    await bce.init();
-
-    expect(Build).toHaveBeenCalledTimes(1);
-    expect(Build).toHaveBeenCalledWith(
+    expect(buildMock).toHaveBeenCalledTimes(1);
+    expect(buildMock).toHaveBeenCalledWith(
       {
         manifest_version: 3,
         name: "Test",
@@ -54,16 +56,18 @@ describe("init", async () => {
       },
       undefined
     );
+    expect(initDevMock).toHaveBeenCalledTimes(0);
+    expect(parseMock).toHaveBeenCalledTimes(1);
   });
 
-  test("test if config will be read with manifest", async () => {
-    await mockResolve();
+  test("test with config file and --dev flag", async () => {
+    process.argv.push("--dev");
+    mockResolve("bce.config.ts");
 
-    const bce = new BCE();
-    await bce.init();
+    await import(`../bce?cacheBust=${Date.now()}`);
 
-    expect(Build).toHaveBeenCalledTimes(1);
-    expect(Build).toHaveBeenCalledWith(
+    expect(buildMock).toHaveBeenCalledTimes(1);
+    expect(buildMock).toHaveBeenCalledWith(
       {
         manifest_version: 3,
         name: "Test",
@@ -75,57 +79,20 @@ describe("init", async () => {
         outdir: "dist",
       }
     );
-  });
+    expect(initDevMock).toHaveBeenCalledTimes(1);
+    expect(parseMock).toHaveBeenCalledTimes(1);
 
-  test("test if init will be called, when main is called", async () => {
-    Bun.env.TEST = "false";
-    await mockResolve();
-    spyOn(BCE.prototype, "init");
-    spyOn(Bun, "file");
-
-    await main();
-
-    expect(BCE.prototype.init).toHaveBeenCalledTimes(1);
-    expect(Bun.file).toHaveBeenCalledTimes(1);
-    expect(Build).toHaveBeenCalledTimes(1);
-    expect(Build).toHaveBeenCalledWith(
-      {
-        manifest_version: 3,
-        name: "Test",
-        version: "0.0.1",
-      },
-      {
-        minify: false,
-        sourcemap: "linked",
-        outdir: "dist",
-      }
-    );
+    process.argv.pop();
   });
 });
 
-describe("bce.ts", () => {
-  test("test if main will be called if file is executed", async () => {
-    Bun.env.TEST = "true";
-
-    const proc = Bun.spawn({
-      cmd: ["bun", "bce.ts"],
-      cwd: resolve(import.meta.dir, ".."),
-    });
-    const exitCode = await proc.exited;
-    const text = await new Response(proc.stdout).text();
-
-    expect(exitCode).toBe(0);
-    expect(text).toBe("TEST\n");
-  });
-});
-
-async function mockResolve() {
+function mockResolve(configFile = "invalid") {
   const dist = resolve(import.meta.dir, "..", "dist");
+  const config = resolve(import.meta.dir, `resources/${configFile}`);
   const manifest = resolve(import.meta.dir, "resources/manifest.ts");
-  const config = resolve(import.meta.dir, "resources/bce.config.ts");
-  spyOn(await import("path"), "resolve").mockImplementation((...args) => {
-    if (args.includes("manifest.ts")) return manifest;
+  spyOn(path, "resolve").mockImplementation((...args) => {
+    if (args.includes("dist")) return dist;
     if (args.includes("bce.config.ts")) return config;
-    return dist;
+    return manifest;
   });
 }

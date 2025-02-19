@@ -2,12 +2,10 @@ import type { WebSocketType } from "./types";
 
 export class Connection {
   ws: WebSocket | undefined;
-  connected = false;
   interval = 2000;
 
-  // TODO Check if i can remove one of the simple conditions, preferably connected
   async connect() {
-    if (this.ws || this.connected) return;
+    if (this.ws) return;
 
     try {
       await fetch("http://localhost:3000", { mode: "no-cors" });
@@ -17,7 +15,6 @@ export class Connection {
     }
 
     this.ws = <WebSocket>new WebSocket("ws://localhost:3000");
-    this.connected = true;
     console.log("Connected to server!");
     this.addListener();
   }
@@ -34,7 +31,6 @@ export class Connection {
       console.log("Connection closed!");
       console.clear();
       this.ws = undefined;
-      this.connected = false;
       this.retryConnect();
     };
   }
@@ -46,6 +42,3 @@ export class Connection {
     }, this.interval);
   }
 }
-
-const connection = new Connection();
-connection.connect().then();
