@@ -72,8 +72,9 @@ export class Build {
       );
       composeContent = composeContent.replaceAll(
         "// IMPORT // Do not remove!",
-        `import "${this.posixPath(
-          resolve(this.cwd, this.originalServiceWorker as string)
+        `import "${this.relativePosixPath(
+          this.cwd,
+          this.originalServiceWorker as string
         )}";`
       );
       await Bun.write(this.compose, composeContent);

@@ -1273,7 +1273,7 @@ describe("setServiceWorker", () => {
   });
 
   test("test with service_worker, pointing to an existing file, creating compose", async () => {
-    spyOn(build, "posixPath");
+    spyOn(build, "relativePosixPath");
 
     build.originalServiceWorker = tsTest1;
     build.manifest = defineManifest({
@@ -1290,8 +1290,8 @@ describe("setServiceWorker", () => {
     expect(console.log).toHaveBeenCalledWith(
       "Background service worker found, creating compose..."
     );
-    expect(build.posixPath).toHaveBeenCalledTimes(1);
-    expect(build.posixPath).toHaveBeenCalledWith(resolve(cwd, tsTest1));
+    expect(build.relativePosixPath).toHaveBeenCalledTimes(1);
+    expect(build.relativePosixPath).toHaveBeenCalledWith(build.cwd, tsTest1);
     const compose = resolve(build.cwd, "compose.ts");
     expect(Bun.write).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledWith(compose, expect.any(String));
