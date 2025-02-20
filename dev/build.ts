@@ -2,6 +2,7 @@ import type { ServerWebSocket } from "bun";
 import { watch } from "fs";
 import { extname, relative, resolve } from "path";
 import { posix } from "path/posix";
+import { exportRemover } from "./plugins";
 import type { BCEConfig, FullManifest, WebSocketType } from "./types";
 
 export class Build {
@@ -55,7 +56,9 @@ export class Build {
       ).text();
       composeContent = composeContent.replaceAll(
         "// IMPORT // Do not remove!",
-        `import "${this.posixPath(resolve(this.cwd, this.originalServiceWorker as string))}";`
+        `import "${this.posixPath(
+          resolve(this.cwd, this.originalServiceWorker as string)
+        )}";`
       );
       await Bun.write(this.compose, composeContent);
       this.manifest.background = {
@@ -134,6 +137,7 @@ export class Build {
         minify: this.config.minify,
         outdir: this.config.outdir,
         sourcemap: this.config.sourcemap,
+        plugins: [exportRemover],
       });
 
       let manifestJson = JSON.stringify(this.manifest, (_key, value) => {

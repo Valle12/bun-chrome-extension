@@ -13,6 +13,7 @@ import * as fs from "fs";
 import { mkdir, readdir, rm } from "fs/promises";
 import { join, relative, resolve } from "path";
 import { Build } from "../build";
+import { exportRemover } from "../plugins";
 import type {
   CustomContentScript,
   FullManifest,
@@ -25,6 +26,7 @@ let build: Build;
 let tsTest1: string;
 let tsTest2: string;
 let tsTest3: string;
+let importExportTest: string;
 let popupTest: string;
 let nestedPopupTest: string;
 let popupWithStylesheetTest: string;
@@ -53,6 +55,9 @@ beforeEach(async () => {
   tsTest1 = build.posixPath(resolve(cwd, "test/resources/test1.ts"));
   tsTest2 = build.posixPath(resolve(cwd, "test/resources/test2.ts"));
   tsTest3 = build.posixPath(resolve(cwd, "test/resources/test3.ts"));
+  importExportTest = build.posixPath(
+    resolve(cwd, "test/resources/importExport.ts")
+  );
   popupTest = build.posixPath(resolve(cwd, "test/resources/popup.html"));
   nestedPopupTest = resolve(cwd, "test/resources/src/nestedPopup.html");
   popupWithStylesheetTest = build.posixPath(
@@ -89,7 +94,8 @@ describe("extractPaths", () => {
       version: "0.0.1",
     });
 
-    const paths = build.extractPaths();
+    const paths: string[] = [];
+    build.extractPaths();
 
     expect(paths).toBeEmpty();
   });
@@ -328,6 +334,7 @@ describe("extractPaths", () => {
   });
 });
 
+// TODO add test with file containing imports and exports and see if the export trimming works
 describe("parseManifest", () => {
   beforeEach(() => {
     spyOn(Bun, "build");
@@ -367,6 +374,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.action?.default_popup).toBe("popup.html");
   });
@@ -391,6 +399,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     expect(build.manifest.background?.type).toBe("module");
@@ -412,6 +421,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.options_page).toBe("optionsPage.html");
   });
@@ -433,6 +443,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
   });
@@ -454,9 +465,53 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     expect(build.manifest.background?.type).toBe("module");
+  });
+
+  test("test with import export to be trimmed while building", async () => {
+    process.chdir(resolve(import.meta.dir, "..", ".."));
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      background: {
+        service_worker: importExportTest,
+      },
+    });
+    build.config = {
+      minify: false,
+      outdir: resolve(cwd, "dist"),
+      sourcemap: "none",
+    };
+    spyOn(console, "log").mockImplementation(() => {});
+
+    await build.parseManifest();
+
+    expect(Bun.build).toHaveBeenCalledTimes(1);
+    expect(Bun.build).toHaveBeenCalledWith({
+      entrypoints: [importExportTest],
+      minify: build.config.minify,
+      outdir: build.config.outdir,
+      sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
+    });
+    expect(build.manifest.background?.service_worker).toBe("importExport.js");
+    expect(build.manifest.background?.type).toBe("module");
+    const exportFile = resolve(build.config.outdir, "importExport.js");
+    const content = await Bun.file(exportFile).text();
+    expect(content).toMatchSnapshot();
+
+    await import(exportFile);
+
+    expect(console.log).toHaveBeenCalledTimes(2);
+    expect(console.log).toHaveBeenNthCalledWith(1, {
+      manifest_version: 3,
+      name: "Test",
+      version: "0.0.1",
+    });
+    expect(console.log).toHaveBeenNthCalledWith(2, "test");
   });
 
   test("test with content_scripts info", async () => {
@@ -478,6 +533,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -507,6 +563,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -534,6 +591,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -564,6 +622,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -590,6 +649,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html"
@@ -618,6 +678,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -648,6 +709,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -682,6 +744,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -717,6 +780,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -754,6 +818,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html"
@@ -848,6 +913,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -958,6 +1024,7 @@ describe("writeManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
@@ -996,6 +1063,7 @@ describe("writeManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(Bun.write).toHaveBeenCalledTimes(5);
     const manifest: FullManifest = await Bun.file(
@@ -1035,6 +1103,7 @@ describe("writeManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
+      plugins: [exportRemover],
     });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(

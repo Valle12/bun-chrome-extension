@@ -1,0 +1,39 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`parseManifest test with import export to be trimmed while building 1`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
