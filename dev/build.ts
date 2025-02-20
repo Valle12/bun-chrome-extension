@@ -2,6 +2,7 @@ import type { ServerWebSocket } from "bun";
 import { watch } from "fs";
 import { extname, relative, resolve } from "path";
 import { posix } from "path/posix";
+import { exportRemover } from "./plugins";
 import type { BCEConfig, FullManifest, WebSocketType } from "./types";
 
 export class Build {
@@ -12,7 +13,7 @@ export class Build {
   ignoreKeys = ["version"];
   icons = [".png", ".bmp", ".gif", ".ico", ".jpeg"];
   originalServiceWorker: string | undefined;
-  compose = resolve(import.meta.dir, "compose.ts");
+  compose = resolve(this.cwd, "compose.ts");
   firstConnect = true;
 
   constructor(manifest: FullManifest, config: BCEConfig = {}) {
@@ -40,10 +41,18 @@ export class Build {
       ).exists())
     ) {
       console.log("No background service worker found, creating one...");
-      const composeFile = Bun.file(
+      let composeContent = await Bun.file(
         resolve(import.meta.dir, "composeTemplate.ts")
+      ).text();
+      composeContent = composeContent.replaceAll(
+        "./connection",
+        "bun-chrome-extension-dev/connection"
       );
-      await Bun.write(this.compose, composeFile);
+      composeContent = composeContent.replaceAll(
+        "./keepAlive",
+        "bun-chrome-extension-dev/keepAlive"
+      );
+      await Bun.write(this.compose, composeContent);
       this.manifest.background = {
         service_worker: this.compose,
         type: "module",
@@ -54,8 +63,19 @@ export class Build {
         resolve(import.meta.dir, "composeTemplate.ts")
       ).text();
       composeContent = composeContent.replaceAll(
+        "./connection",
+        "bun-chrome-extension-dev/connection"
+      );
+      composeContent = composeContent.replaceAll(
+        "./keepAlive",
+        "bun-chrome-extension-dev/keepAlive"
+      );
+      composeContent = composeContent.replaceAll(
         "// IMPORT // Do not remove!",
-        `import "${this.posixPath(resolve(this.cwd, this.originalServiceWorker as string))}";`
+        `import "${this.relativePosixPath(
+          this.cwd,
+          this.originalServiceWorker as string
+        )}";`
       );
       await Bun.write(this.compose, composeContent);
       this.manifest.background = {
@@ -134,6 +154,7 @@ export class Build {
         minify: this.config.minify,
         outdir: this.config.outdir,
         sourcemap: this.config.sourcemap,
+        plugins: [exportRemover],
       });
 
       let manifestJson = JSON.stringify(this.manifest, (_key, value) => {
