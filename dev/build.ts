@@ -41,10 +41,18 @@ export class Build {
       ).exists())
     ) {
       console.log("No background service worker found, creating one...");
-      const composeFile = Bun.file(
+      let composeContent = await Bun.file(
         resolve(import.meta.dir, "composeTemplate.ts")
+      ).text();
+      composeContent = composeContent.replaceAll(
+        "./connection",
+        "bun-chrome-extension-dev/connection"
       );
-      await Bun.write(this.compose, composeFile);
+      composeContent = composeContent.replaceAll(
+        "./keepAlive",
+        "bun-chrome-extension-dev/keepAlive"
+      );
+      await Bun.write(this.compose, composeContent);
       this.manifest.background = {
         service_worker: this.compose,
         type: "module",
@@ -54,6 +62,14 @@ export class Build {
       let composeContent = await Bun.file(
         resolve(import.meta.dir, "composeTemplate.ts")
       ).text();
+      composeContent = composeContent.replaceAll(
+        "./connection",
+        "bun-chrome-extension-dev/connection"
+      );
+      composeContent = composeContent.replaceAll(
+        "./keepAlive",
+        "bun-chrome-extension-dev/keepAlive"
+      );
       composeContent = composeContent.replaceAll(
         "// IMPORT // Do not remove!",
         `import "${this.posixPath(

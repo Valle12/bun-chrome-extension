@@ -1210,12 +1210,16 @@ describe("posixPath", () => {
 describe("setServiceWorker", () => {
   beforeEach(() => {
     spyOn(console, "log").mockImplementation(() => {});
-    spyOn(Bun, "write").mockImplementation(() => Promise.resolve(1));
+    spyOn(Bun, "write");
     spyOn(Bun, "file");
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     mock.restore();
+    await rm(resolve(build.cwd, "compose.ts"), {
+      recursive: true,
+      force: true,
+    });
   });
 
   test("test with no background info, so creating connection and keepAlive as background info", async () => {
@@ -1239,6 +1243,9 @@ describe("setServiceWorker", () => {
       service_worker: compose,
       type: "module",
     });
+
+    const content = await Bun.file(compose).text();
+    expect(content).toMatchSnapshot();
   });
 
   test("test with invalid service_worker, so creating connection and keepAlive as background info", async () => {
@@ -1292,6 +1299,9 @@ describe("setServiceWorker", () => {
       service_worker: compose,
       type: "module",
     });
+
+    const content = await Bun.file(compose).text();
+    expect(content).toMatchSnapshot();
   });
 });
 

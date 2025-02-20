@@ -37,3 +37,23 @@ new Test;
 }
 "
 `;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 1`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 1`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "E:/projects/VS Code/bun-chrome-extension/dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
