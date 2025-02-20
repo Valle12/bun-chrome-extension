@@ -13,7 +13,7 @@ export class Build {
   ignoreKeys = ["version"];
   icons = [".png", ".bmp", ".gif", ".ico", ".jpeg"];
   originalServiceWorker: string | undefined;
-  compose = resolve(import.meta.dir, "compose.ts");
+  compose = resolve(this.cwd, "compose.ts");
   firstConnect = true;
 
   constructor(manifest: FullManifest, config: BCEConfig = {}) {

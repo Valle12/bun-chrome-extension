@@ -1232,7 +1232,7 @@ describe("setServiceWorker", () => {
     );
     expect(Bun.file).toHaveBeenCalledTimes(1);
     expect(Bun.file).toHaveBeenCalledWith(resolve(cwd, "composeTemplate.ts"));
-    const compose = resolve(cwd, "compose.ts");
+    const compose = resolve(build.cwd, "compose.ts");
     expect(Bun.write).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledWith(compose, expect.anything());
     expect(build.manifest.background).toEqual({
@@ -1260,7 +1260,7 @@ describe("setServiceWorker", () => {
       resolve(cwd, "composeTemplate.ts")
     );
     expect(build.manifest.background).toEqual({
-      service_worker: resolve(cwd, "compose.ts"),
+      service_worker: resolve(build.cwd, "compose.ts"),
       type: "module",
     });
   });
@@ -1285,7 +1285,7 @@ describe("setServiceWorker", () => {
     );
     expect(build.posixPath).toHaveBeenCalledTimes(1);
     expect(build.posixPath).toHaveBeenCalledWith(resolve(cwd, tsTest1));
-    const compose = resolve(cwd, "compose.ts");
+    const compose = resolve(build.cwd, "compose.ts");
     expect(Bun.write).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledWith(compose, expect.any(String));
     expect(build.manifest.background).toEqual({
