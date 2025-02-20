@@ -72,7 +72,7 @@ export class Build {
       );
       composeContent = composeContent.replaceAll(
         "// IMPORT // Do not remove!",
-        `import "${this.relativePosixPath(
+        `import "./${this.relativePosixPath(
           this.cwd,
           this.originalServiceWorker as string
         )}";`
