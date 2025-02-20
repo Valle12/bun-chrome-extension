@@ -156,7 +156,10 @@ export class Build {
           continue;
         }
 
-        let pathInOutdir = relative(this.config.outdir, output.path);
+        let pathInOutdir = this.relativePosixPath(
+          this.config.outdir,
+          output.path
+        );
 
         if (this.icons.includes(extname(pathInOutdir))) {
           const pathInOutdirParts = pathInOutdir.split("-");

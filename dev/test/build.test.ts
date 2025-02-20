@@ -26,6 +26,7 @@ let tsTest1: string;
 let tsTest2: string;
 let tsTest3: string;
 let popupTest: string;
+let nestedPopupTest: string;
 let popupWithStylesheetTest: string;
 let optionsPageTest: string;
 let optionsPageWithStylesheetTest: string;
@@ -53,6 +54,7 @@ beforeEach(async () => {
   tsTest2 = build.posixPath(resolve(cwd, "test/resources/test2.ts"));
   tsTest3 = build.posixPath(resolve(cwd, "test/resources/test3.ts"));
   popupTest = build.posixPath(resolve(cwd, "test/resources/popup.html"));
+  nestedPopupTest = resolve(cwd, "test/resources/src/nestedPopup.html");
   popupWithStylesheetTest = build.posixPath(
     resolve(cwd, "test/resources/popup-with-stylesheet.html")
   );
@@ -367,6 +369,32 @@ describe("parseManifest", () => {
       sourcemap: build.config.sourcemap,
     });
     expect(build.manifest.action?.default_popup).toBe("popup.html");
+  });
+
+  test("test with relative nested popup info", async () => {
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      background: {
+        service_worker: tsTest1,
+      },
+      action: {
+        default_popup: nestedPopupTest,
+      },
+    });
+
+    await build.parseManifest();
+
+    expect(Bun.build).toHaveBeenCalledTimes(1);
+    expect(Bun.build).toHaveBeenCalledWith({
+      entrypoints: [tsTest1, build.posixPath(nestedPopupTest)],
+      minify: build.config.minify,
+      outdir: build.config.outdir,
+      sourcemap: build.config.sourcemap,
+    });
+    expect(build.manifest.background?.service_worker).toBe("test1.js");
+    expect(build.manifest.background?.type).toBe("module");
+    expect(build.manifest.action?.default_popup).toBe("src/nestedPopup.html");
   });
 
   test("test with options_page info", async () => {
