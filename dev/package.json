@@ -19,6 +19,7 @@
     "composeTemplate.ts",
     "connection.ts",
     "keepAlive.ts",
+    "plugins.ts",
     "types.ts"
   ],
   "dependencies": {
