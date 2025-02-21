@@ -57,3 +57,467 @@ new Connection().connect();
 new KeepAlive();
 "
 `;
+
+exports[`parseManifest test with import export to be trimmed while building 2`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 2`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 2`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "./dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`parseManifest test with import export to be trimmed while building 3`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 3`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 3`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "./dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`parseManifest test with import export to be trimmed while building 4`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 4`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 4`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "./dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`parseManifest test with import export to be trimmed while building 5`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 5`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 5`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "./dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`parseManifest test with import export to be trimmed while building 6`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 6`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 6`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "./dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`parseManifest test with import export to be trimmed while building 7`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 7`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 7`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "./dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`parseManifest test with import export to be trimmed while building 8`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 8`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 8`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "./dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`parseManifest test with import export to be trimmed while building 9`] = `
+"// dev/types.ts
+function defineManifest(manifest) {
+  return {
+    manifest_version: 3,
+    ...manifest
+  };
+}
+
+// dev/test/resources/manifest.ts
+var manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1"
+});
+
+// dev/test/resources/importExport.ts
+console.log(manifest);
+function test() {
+  return "test";
+}
+test();
+var name = "test";
+{
+}
+
+class Test {
+  constructor() {
+    console.log("test");
+  }
+}
+new Test;
+{
+  name:
+    ;
+}
+"
+`;
+
+exports[`setServiceWorker test with no background info, so creating connection and keepAlive as background info 9`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+// IMPORT // Do not remove!
+
+new Connection().connect();
+new KeepAlive();
+"
+`;
+
+exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 9`] = `
+"import { Connection } from "bun-chrome-extension-dev/connection";
+import { KeepAlive } from "bun-chrome-extension-dev/keepAlive";
+import "./dev/test/resources/test1.ts";
+
+new Connection().connect();
+new KeepAlive();
+"
+`;

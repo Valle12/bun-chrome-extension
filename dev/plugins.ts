@@ -1,4 +1,5 @@
 import type { BunPlugin } from "bun";
+import { compile } from "sass";
 
 export const exportRemover: BunPlugin = {
   name: "exportRemover",
@@ -10,6 +11,19 @@ export const exportRemover: BunPlugin = {
       const transformed = content.replace(/\bexport(?:\s+default)?\s+/g, "");
       return {
         contents: transformed,
+      };
+    });
+  },
+};
+
+export const sassCompiler: BunPlugin = {
+  name: "sassCompiler",
+  setup(build) {
+    build.onLoad({ filter: /\.scss$/ }, args => {
+      const result = compile(args.path);
+      return {
+        contents: result.css,
+        loader: "css",
       };
     });
   },

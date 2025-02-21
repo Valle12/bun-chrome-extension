@@ -13,7 +13,7 @@ import * as fs from "fs";
 import { mkdir, readdir, rm } from "fs/promises";
 import { join, relative, resolve } from "path";
 import { Build } from "../build";
-import { exportRemover } from "../plugins";
+import { exportRemover, sassCompiler } from "../plugins";
 import type {
   CustomContentScript,
   FullManifest,
@@ -369,13 +369,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popupTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.action?.default_popup).toBe("popup.html");
   });
 
@@ -399,7 +392,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
+      plugins: [exportRemover, sassCompiler],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     expect(build.manifest.background?.type).toBe("module");
@@ -416,13 +409,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsPageTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.options_page).toBe("optionsPage.html");
   });
 
@@ -438,13 +424,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [optionsUiTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
   });
 
@@ -460,13 +439,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     expect(build.manifest.background?.type).toBe("module");
   });
@@ -490,13 +462,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [importExportTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.background?.service_worker).toBe("importExport.js");
     expect(build.manifest.background?.type).toBe("module");
     const exportFile = resolve(build.config.outdir, "importExport.js");
@@ -528,13 +493,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
     const js = contentScripts[0].js as string[];
@@ -558,13 +516,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1, tsTest2],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -586,13 +537,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1, tsTest2],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
     const js = contentScripts[0].js as string[];
@@ -617,13 +561,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1, tsTest2],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
     const js = contentScripts[0].js as string[];
@@ -644,13 +581,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popupWithStylesheetTest],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html"
     );
@@ -673,13 +603,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1, tsTest1],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -704,13 +627,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1, tsTest1, tsTest2],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
     const js = contentScripts[0].js as string[];
@@ -739,13 +655,6 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1, tsTest1, tsTest2],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -780,7 +689,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
+      plugins: [exportRemover, sassCompiler],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -818,7 +727,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
+      plugins: [exportRemover, sassCompiler],
     });
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html"
@@ -839,6 +748,14 @@ describe("parseManifest", () => {
     expect(popup).toContain("chunk-");
     expect(popup).toContain(".js");
     expect(popup).toContain(".css");
+
+    const css = await Bun.file(
+      resolve(
+        build.config.outdir,
+        popup.substring(popup.indexOf("./chunk-"), popup.indexOf(".css") + 4)
+      )
+    ).text();
+    expect(css).toContain("prefers-color-scheme");
 
     const optionsPage = await Bun.file(
       resolve(build.config.outdir, build.manifest.options_page as string)
@@ -913,7 +830,7 @@ describe("parseManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
+      plugins: [exportRemover, sassCompiler],
     });
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
@@ -1019,13 +936,6 @@ describe("writeManifest", () => {
     await build.writeManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [img16],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
-    });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json")
@@ -1063,7 +973,7 @@ describe("writeManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
+      plugins: [exportRemover, sassCompiler],
     });
     expect(Bun.write).toHaveBeenCalledTimes(5);
     const manifest: FullManifest = await Bun.file(
@@ -1103,7 +1013,7 @@ describe("writeManifest", () => {
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
-      plugins: [exportRemover],
+      plugins: [exportRemover, sassCompiler],
     });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(

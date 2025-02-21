@@ -1,0 +1,19 @@
+@use "./testSCSS";
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+:root {
+  @include testSCSS.light-theme;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include testSCSS.dark-theme;
+  }
+}
+
+html {
+  overflow: hidden;
+  width: 800px;
+  height: 600px;
+}

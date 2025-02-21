@@ -2,7 +2,7 @@ import type { ServerWebSocket } from "bun";
 import { watch } from "fs";
 import { extname, relative, resolve } from "path";
 import { posix } from "path/posix";
-import { exportRemover } from "./plugins";
+import { exportRemover, sassCompiler } from "./plugins";
 import type { BCEConfig, FullManifest, WebSocketType } from "./types";
 
 export class Build {
@@ -154,7 +154,7 @@ export class Build {
         minify: this.config.minify,
         outdir: this.config.outdir,
         sourcemap: this.config.sourcemap,
-        plugins: [exportRemover],
+        plugins: [exportRemover, sassCompiler],
       });
 
       let manifestJson = JSON.stringify(this.manifest, (_key, value) => {
@@ -172,7 +172,10 @@ export class Build {
             output.kind === "asset") ||
           (output.path.endsWith(".js") &&
             output.loader === "file" &&
-            output.kind === "entry-point")
+            output.kind === "entry-point") ||
+          (output.path.endsWith(".svg") &&
+            output.loader === "file" &&
+            output.kind === "asset")
         ) {
           continue;
         }
