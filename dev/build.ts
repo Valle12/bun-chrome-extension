@@ -85,6 +85,9 @@ export class Build {
     }
   }
 
+  // TODO integration test:
+  // start bun run dev -> everything is fine
+  // save solace.ts -> everything breaks
   openWebsocket(ws: ServerWebSocket<WebSocketType>) {
     this.ws = ws;
 
@@ -111,20 +114,25 @@ export class Build {
 
   async initDev() {
     await this.setServiceWorker();
-    this.startServer();
 
     let timeout: Timer;
     const watcher = watch(this.cwd, { recursive: true }, (_event, filename) => {
       if (
         filename === null ||
+        filename === "compose.ts" ||
         resolve(this.cwd, filename).includes(this.config.outdir) ||
-        filename.includes("node_modules")
+        filename.includes("node_modules") ||
+        filename.includes(".git")
       )
         return;
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(async () => {
         console.clear();
         console.log("Rebuild project...");
+        const manifestModule = await import(
+          resolve(process.cwd(), "manifest.ts")
+        );
+        this.manifest = manifestModule.manifest;
         await this.setServiceWorker();
         await this.parse();
         this.ws.send("reload");

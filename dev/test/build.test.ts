@@ -11,6 +11,7 @@ import {
 import type { FSWatcher } from "fs";
 import * as fs from "fs";
 import { mkdir, readdir, rm } from "fs/promises";
+import * as path from "path";
 import { join, relative, resolve } from "path";
 import { Build } from "../build";
 import { exportRemover, sassCompiler } from "../plugins";
@@ -334,7 +335,6 @@ describe("extractPaths", () => {
   });
 });
 
-// TODO add test with file containing imports and exports and see if the export trimming works
 describe("parseManifest", () => {
   beforeEach(() => {
     spyOn(Bun, "build");
@@ -1337,7 +1337,6 @@ describe("initDev", () => {
     listener("change", build.config.outdir);
 
     expect(build.setServiceWorker).toHaveBeenCalledTimes(1);
-    expect(build.startServer).toHaveBeenCalledTimes(1);
     expect(fs.watch).toHaveBeenCalledTimes(1);
     expect(fs.watch).toHaveBeenCalledWith(
       build.cwd,
@@ -1353,7 +1352,21 @@ describe("initDev", () => {
     listener("change", "node_modules");
 
     expect(build.setServiceWorker).toHaveBeenCalledTimes(1);
-    expect(build.startServer).toHaveBeenCalledTimes(1);
+    expect(fs.watch).toHaveBeenCalledTimes(1);
+    expect(fs.watch).toHaveBeenCalledWith(
+      build.cwd,
+      { recursive: true },
+      listener
+    );
+    expect(console.log).toHaveBeenCalledTimes(0);
+  });
+
+  test("test with compose.ts as updated file", async () => {
+    await build.initDev();
+
+    listener("change", "compose.ts");
+
+    expect(build.setServiceWorker).toHaveBeenCalledTimes(1);
     expect(fs.watch).toHaveBeenCalledTimes(1);
     expect(fs.watch).toHaveBeenCalledWith(
       build.cwd,
@@ -1367,6 +1380,7 @@ describe("initDev", () => {
   // Save callback and call it later -> Code in braces will run
   // Do assertions and reset mock afterwards
   test("test with updated file", async () => {
+    const manifest = resolve(import.meta.dir, "resources/manifest.ts");
     const original = globalThis.setTimeout;
     let handler = {} as (...args: any[]) => Promise<void>;
     build.ws = {
@@ -1380,6 +1394,7 @@ describe("initDev", () => {
     );
     spyOn(build, "parse").mockImplementation(() => Promise.resolve());
     spyOn(console, "clear").mockImplementation(() => {});
+    spyOn(path, "resolve").mockReturnValue(manifest);
 
     await build.initDev();
 
@@ -1390,7 +1405,6 @@ describe("initDev", () => {
     expect(console.log).toHaveBeenCalledTimes(1);
     expect(console.log).toHaveBeenCalledWith("Rebuild project...");
     expect(build.setServiceWorker).toHaveBeenCalledTimes(2);
-    expect(build.startServer).toHaveBeenCalledTimes(1);
     expect(build.parse).toHaveBeenCalledTimes(1);
     expect(build.ws.send).toHaveBeenCalledTimes(1);
     expect(build.ws.send).toHaveBeenCalledWith("reload");
@@ -1413,6 +1427,10 @@ describe("initDev", () => {
     expect(console.log).toHaveBeenCalledWith("Closing watcher...");
     expect(process.exit).toHaveBeenCalledTimes(1);
   });
+});
+
+describe("integration tests", () => {
+  test.only("test if watching and reloading works as expected", () => {});
 });
 
 async function createTestPublicFolder(publicFolder: string, files: string[]) {

@@ -19,15 +19,18 @@ describe("bce", async () => {
   let buildMock = {} as Mock<(...args: any[]) => any>;
   let parseMock = {} as Mock<(...args: any[]) => any>;
   let initDevMock = {} as Mock<(...args: any[]) => any>;
+  let startServerMock = {} as Mock<(...args: any[]) => any>;
 
   beforeEach(async () => {
     await mock.module("../build", () => {
       parseMock = mock();
       initDevMock = mock();
+      startServerMock = mock();
       buildMock = mock(() => {
         return {
           parse: parseMock,
           initDev: initDevMock,
+          startServer: startServerMock,
         };
       });
       return {
@@ -58,6 +61,8 @@ describe("bce", async () => {
     );
     expect(initDevMock).toHaveBeenCalledTimes(0);
     expect(parseMock).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith("Build completed!");
   });
 
   test("test with config file and --dev flag", async () => {
@@ -81,6 +86,7 @@ describe("bce", async () => {
     );
     expect(initDevMock).toHaveBeenCalledTimes(1);
     expect(parseMock).toHaveBeenCalledTimes(1);
+    expect(startServerMock).toHaveBeenCalledTimes(1);
 
     process.argv.pop();
   });
