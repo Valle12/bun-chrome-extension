@@ -15,6 +15,10 @@ export class Build {
   originalServiceWorker: string | undefined;
   compose = resolve(this.cwd, "compose.ts");
   firstConnect = true;
+  package =
+    Bun.env.LOCAL === "true"
+      ? this.posixPath(this.cwd)
+      : "bun-chrome-extension-dev";
 
   constructor(manifest: FullManifest, config: BCEConfig = {}) {
     this.manifest = manifest;
@@ -46,11 +50,11 @@ export class Build {
       ).text();
       composeContent = composeContent.replaceAll(
         "./connection",
-        "bun-chrome-extension-dev/connection"
+        `${this.package}/connection`
       );
       composeContent = composeContent.replaceAll(
         "./keepAlive",
-        "bun-chrome-extension-dev/keepAlive"
+        `${this.package}/keepAlive`
       );
       await Bun.write(this.compose, composeContent);
       this.manifest.background = {
@@ -64,11 +68,11 @@ export class Build {
       ).text();
       composeContent = composeContent.replaceAll(
         "./connection",
-        "bun-chrome-extension-dev/connection"
+        `${this.package}/connection`
       );
       composeContent = composeContent.replaceAll(
         "./keepAlive",
-        "bun-chrome-extension-dev/keepAlive"
+        `${this.package}/keepAlive`
       );
       composeContent = composeContent.replaceAll(
         "// IMPORT // Do not remove!",
@@ -85,9 +89,6 @@ export class Build {
     }
   }
 
-  // TODO integration test:
-  // start bun run dev -> everything is fine
-  // save solace.ts -> everything breaks
   openWebsocket(ws: ServerWebSocket<WebSocketType>) {
     this.ws = ws;
 
@@ -109,6 +110,7 @@ export class Build {
         open: ws => this.openWebsocket(ws),
         message: () => {},
       },
+      port: Bun.env.LOCAL === "true" ? 8080 : 3000,
     });
   }
 

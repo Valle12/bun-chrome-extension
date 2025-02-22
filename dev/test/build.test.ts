@@ -1429,10 +1429,6 @@ describe("initDev", () => {
   });
 });
 
-describe("integration tests", () => {
-  test.only("test if watching and reloading works as expected", () => {});
-});
-
 async function createTestPublicFolder(publicFolder: string, files: string[]) {
   for (const file of files) {
     const inputFilePath = resolve(cwd, file);
