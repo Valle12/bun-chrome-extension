@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@types/bun": "^1.2.3",
+    "chokidar": "^4.0.3",
     "sass": "^1.85.0"
   },
   "peerDependencies": {

@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { watch } from "fs";
+import { watch } from "chokidar";
 import { rm } from "fs/promises";
 import { resolve } from "path";
 import { Connection } from "./resources/bceIntegration/connection";
@@ -23,40 +23,37 @@ describe("bce integration", () => {
       stdout: "ignore",
     });
 
-    let timeout: Timer;
+    const watcher = watch(cwd, {
+      awaitWriteFinish: true,
+      ignoreInitial: true,
+    });
+
     let counter = 0;
-    const watcher = watch(
-      cwd,
-      { recursive: true },
-      async (_event, filename) => {
-        if (!filename?.includes("manifest.json")) return;
-        if (timeout) clearTimeout(timeout);
-        timeout = setTimeout(async () => {
-          counter++;
-          new Connection().connect();
+    watcher.on("all", async (_event, filename) => {
+      if (!filename.includes("manifest.json")) return;
+      counter++;
+      new Connection().connect();
 
-          const manifest = await Bun.file(
-            resolve(cwd, "dist/manifest.json")
-          ).text();
-          expect(manifest).toMatchSnapshot();
+      const manifest = await Bun.file(
+        resolve(cwd, "dist/manifest.json")
+      ).text();
+      expect(manifest).toMatchSnapshot();
 
-          const solaceDist = await Bun.file(
-            resolve(cwd, "dist/src/solace.js")
-          ).text();
-          expect(solaceDist).not.toContain("export");
-          expect(solaceDist).toMatchSnapshot();
+      const solaceDist = await Bun.file(
+        resolve(cwd, "dist/src/solace.js")
+      ).text();
+      expect(solaceDist).not.toContain("export");
+      expect(solaceDist).toMatchSnapshot();
 
-          if (counter === 1) {
-            const solace = Bun.file(resolve(cwd, "src/solace.ts"));
-            const content = await solace.text();
-            await Bun.write(solace, content);
-          } else if (counter === 2) {
-            watcher.close();
-            proc.kill("SIGINT");
-          }
-        }, 50);
+      if (counter === 1) {
+        const solace = Bun.file(resolve(cwd, "src/solace.ts"));
+        const content = await solace.text();
+        await Bun.write(solace, content);
+      } else if (counter === 2) {
+        watcher.close();
+        proc.kill("SIGINT");
       }
-    );
+    });
 
     await proc.exited;
   }, 10000);

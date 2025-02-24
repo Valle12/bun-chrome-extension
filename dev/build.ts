@@ -1,5 +1,5 @@
 import type { ServerWebSocket } from "bun";
-import { watch } from "fs";
+import { watch } from "chokidar";
 import { extname, relative, resolve } from "path";
 import { posix } from "path/posix";
 import { exportRemover, sassCompiler } from "./plugins";
@@ -101,7 +101,7 @@ export class Build {
   }
 
   startServer() {
-    Bun.serve<WebSocketType>({
+    Bun.serve<WebSocketType, string>({
       fetch(req, server) {
         if (server.upgrade(req)) return;
         return new Response("Upgrade failed!", { status: 500 });
@@ -117,28 +117,26 @@ export class Build {
   async initDev() {
     await this.setServiceWorker();
 
-    let timeout: Timer;
-    const watcher = watch(this.cwd, { recursive: true }, (_event, filename) => {
-      if (
-        filename === null ||
-        filename === "compose.ts" ||
-        resolve(this.cwd, filename).includes(this.config.outdir) ||
-        filename.includes("node_modules") ||
-        filename.includes(".git")
-      )
-        return;
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(async () => {
-        console.clear();
-        console.log("Rebuild project...");
-        const manifestModule = await import(
-          resolve(process.cwd(), "manifest.ts")
-        );
-        this.manifest = manifestModule.manifest;
-        await this.setServiceWorker();
-        await this.parse();
-        this.ws.send("reload");
-      }, 50);
+    const watcher = watch(this.cwd, {
+      awaitWriteFinish: true,
+      ignored: file =>
+        resolve(this.cwd, file).includes(this.config.outdir) ||
+        file.includes("compose.ts") ||
+        file.includes("node_modules") ||
+        file.includes(".git"),
+      ignoreInitial: true,
+    });
+
+    watcher.on("all", async () => {
+      console.clear();
+      console.log("Rebuild project...");
+      const manifestModule = await import(
+        resolve(process.cwd(), "manifest.ts")
+      );
+      this.manifest = manifestModule.manifest;
+      await this.setServiceWorker();
+      await this.parse();
+      this.ws.send("reload");
     });
 
     process.on("SIGINT", () => {

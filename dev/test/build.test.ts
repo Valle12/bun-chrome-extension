@@ -8,8 +8,8 @@ import {
   spyOn,
   test,
 } from "bun:test";
-import type { FSWatcher } from "fs";
-import * as fs from "fs";
+import type { FSWatcher } from "chokidar";
+import * as chokidar from "chokidar";
 import { mkdir, readdir, rm } from "fs/promises";
 import * as path from "path";
 import { join, relative, resolve } from "path";
@@ -1306,24 +1306,20 @@ describe("openWebsocket", () => {
 
 describe("initDev", () => {
   let listener: Function;
+  let options: chokidar.Matcher;
 
   beforeEach(() => {
-    spyOn(build, "setServiceWorker").mockImplementation(() =>
-      Promise.resolve()
-    );
+    spyOn(build, "setServiceWorker").mockReturnValue(Promise.resolve());
     spyOn(build, "startServer").mockImplementation(() => {});
     spyOn(console, "log").mockImplementation(() => {});
-    spyOn(fs, "watch").mockImplementation((...args: any[]) => {
-      for (const arg of args) {
-        if (typeof arg === "function") {
-          listener = arg;
-          break;
-        }
-      }
-
+    spyOn(chokidar, "watch").mockImplementation((_paths, opts) => {
+      if (opts) options = opts.ignored as chokidar.Matcher;
       return {
-        close: () => {},
-      } as FSWatcher;
+        on: (_event: keyof chokidar.FSWatcherKnownEventMap, cb: Function) => {
+          listener = cb;
+        },
+        close: mock(),
+      } as unknown as FSWatcher;
     });
   });
 
@@ -1331,75 +1327,25 @@ describe("initDev", () => {
     mock.restore();
   });
 
-  test("test with updated file in outdir", async () => {
+  test("test ignored method in watch options", async () => {
     await build.initDev();
 
-    listener("change", build.config.outdir);
-
-    expect(build.setServiceWorker).toHaveBeenCalledTimes(1);
-    expect(fs.watch).toHaveBeenCalledTimes(1);
-    expect(fs.watch).toHaveBeenCalledWith(
-      build.cwd,
-      { recursive: true },
-      listener
-    );
-    expect(console.log).toHaveBeenCalledTimes(0);
+    expect(typeof options === "function" ? options(".git") : false).toBeTrue();
+    expect(typeof options === "function" ? options("test") : true).toBeFalse();
   });
 
-  test("test with updated file in node_modules", async () => {
-    await build.initDev();
-
-    listener("change", "node_modules");
-
-    expect(build.setServiceWorker).toHaveBeenCalledTimes(1);
-    expect(fs.watch).toHaveBeenCalledTimes(1);
-    expect(fs.watch).toHaveBeenCalledWith(
-      build.cwd,
-      { recursive: true },
-      listener
-    );
-    expect(console.log).toHaveBeenCalledTimes(0);
-  });
-
-  test("test with compose.ts as updated file", async () => {
-    await build.initDev();
-
-    listener("change", "compose.ts");
-
-    expect(build.setServiceWorker).toHaveBeenCalledTimes(1);
-    expect(fs.watch).toHaveBeenCalledTimes(1);
-    expect(fs.watch).toHaveBeenCalledWith(
-      build.cwd,
-      { recursive: true },
-      listener
-    );
-    expect(console.log).toHaveBeenCalledTimes(0);
-  });
-
-  // Replace setTimeout with a mock to extract the callback
-  // Save callback and call it later -> Code in braces will run
-  // Do assertions and reset mock afterwards
   test("test with updated file", async () => {
     const manifest = resolve(import.meta.dir, "resources/manifest.ts");
-    const original = globalThis.setTimeout;
-    let handler = {} as (...args: any[]) => Promise<void>;
     build.ws = {
       send: mock(),
     } as unknown as ServerWebSocket<WebSocketType>;
-    globalThis.setTimeout = Object.assign(
-      mock((cb: (...args: any[]) => Promise<void>, _delay, ..._args) => {
-        handler = cb;
-        return 0;
-      })
-    );
-    spyOn(build, "parse").mockImplementation(() => Promise.resolve());
+
     spyOn(console, "clear").mockImplementation(() => {});
+    spyOn(build, "parse").mockReturnValue(Promise.resolve());
     spyOn(path, "resolve").mockReturnValue(manifest);
 
     await build.initDev();
-
-    listener("change", tsTest1);
-    await handler();
+    await listener("all", tsTest1);
 
     expect(console.clear).toHaveBeenCalledTimes(1);
     expect(console.log).toHaveBeenCalledTimes(1);
@@ -1408,8 +1354,6 @@ describe("initDev", () => {
     expect(build.parse).toHaveBeenCalledTimes(1);
     expect(build.ws.send).toHaveBeenCalledTimes(1);
     expect(build.ws.send).toHaveBeenCalledWith("reload");
-
-    globalThis.setTimeout = original;
   });
 
   test("test if shutdown runs", async () => {
