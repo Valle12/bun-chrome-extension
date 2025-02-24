@@ -31,12 +31,8 @@ To granularly enable certain minifications:
 ```ts
 minify: {
   whitespace: true,
-    identifiers
-:
-  true,
-    syntax
-:
-  true
+  identifiers: true,
+  syntax: true
 }
 ```
 
