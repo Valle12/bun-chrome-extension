@@ -18,9 +18,12 @@ if (await Bun.file(configFile).exists()) {
 const manifestModule = await import(resolve(process.cwd(), "manifest.ts"));
 const manifest: FullManifest = manifestModule.manifest;
 
+const isDev = process.argv.length === 3 && process.argv[2] === "--dev";
 const build = new Build(manifest, config);
-if (process.argv.length === 3 && process.argv[2] === "--dev")
-  await build.initDev();
+if (isDev) await build.initDev();
 await build.parse();
-
-console.log("Build completed!");
+if (isDev) {
+  build.startServer();
+} else {
+  console.log("Build completed!");
+}

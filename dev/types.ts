@@ -4,8 +4,8 @@ export type OnlyKnown<T> = {
   [K in keyof T as string extends K
     ? never
     : number extends K
-      ? never
-      : K]: T[K];
+    ? never
+    : K]: T[K];
 };
 
 // Manifest
@@ -92,3 +92,9 @@ export type WebSocketType = "reload";
 
 // Chrome Messaging
 export type ChromeMessage = "activate";
+
+declare module "bun" {
+  interface Env {
+    LOCAL: "true" | "false";
+  }
+}

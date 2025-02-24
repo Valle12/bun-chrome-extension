@@ -1,0 +1,49 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`bce integration test if watching and reloading works as expected 1`] = `
+"{
+  "manifest_version": 3,
+  "name": "Test",
+  "version": "0.0.1",
+  "background": {
+    "service_worker": "compose.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "src/solace.js"
+      ]
+    }
+  ]
+}"
+`;
+
+exports[`bce integration test if watching and reloading works as expected 2`] = `
+"class o{constructor(){console.log("Solace")}}new o;
+"
+`;
+
+exports[`bce integration test if watching and reloading works as expected 3`] = `
+"{
+  "manifest_version": 3,
+  "name": "Test",
+  "version": "0.0.1",
+  "background": {
+    "service_worker": "compose.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "src/solace.js"
+      ]
+    }
+  ]
+}"
+`;
+
+exports[`bce integration test if watching and reloading works as expected 4`] = `
+"class o{constructor(){console.log("Solace")}}new o;
+"
+`;

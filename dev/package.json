@@ -23,10 +23,11 @@
     "types.ts"
   ],
   "dependencies": {
-    "@types/chrome": "^0.0.302"
+    "@types/chrome": "^0.0.306"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/bun": "^1.2.3",
+    "chokidar": "^4.0.3",
     "sass": "^1.85.0"
   },
   "peerDependencies": {
