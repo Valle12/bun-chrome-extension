@@ -12,7 +12,7 @@ import * as path from "path";
 import { resolve } from "path";
 import * as build from "../build";
 
-describe.only("bce", async () => {
+describe("bce", async () => {
   const originalBuild = {
     ...build,
   };

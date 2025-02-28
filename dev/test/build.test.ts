@@ -88,7 +88,7 @@ afterEach(async () => {
   await rm(build.config.outdir, { recursive: true, force: true });
 });
 
-describe("extractPaths", () => {
+describe.only("extractPaths", () => {
   test("test with no additional config", () => {
     build.manifest = defineManifest({
       name: "test",
