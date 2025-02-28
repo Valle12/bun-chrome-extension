@@ -48,7 +48,7 @@ describe("bce", async () => {
   test("test with no config file", async () => {
     mockResolve();
 
-    await import(`../bce?cacheBust=${Date.now()}`);
+    await import(`../bce?cacheBust=${Date.now()}${Math.random()}`);
 
     expect(buildMock).toHaveBeenCalledTimes(1);
     expect(buildMock).toHaveBeenCalledWith(
@@ -69,7 +69,7 @@ describe("bce", async () => {
     process.argv.push("--dev");
     mockResolve("bce.config.ts");
 
-    await import(`../bce?cacheBust=${Date.now()}`);
+    await import(`../bce?cacheBust=${Date.now()}${Math.random()}`);
 
     expect(buildMock).toHaveBeenCalledTimes(1);
     expect(buildMock).toHaveBeenCalledWith(

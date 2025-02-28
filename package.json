@@ -26,10 +26,10 @@
     "@inquirer/prompts": "^7.3.2"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.3",
+    "@types/bun": "^1.2.4",
     "vitepress": "^1.6.3"
   },
   "peerDependencies": {
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   }
 }

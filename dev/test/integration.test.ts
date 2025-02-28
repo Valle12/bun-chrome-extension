@@ -24,7 +24,10 @@ describe("bce integration", () => {
     });
 
     const watcher = watch(cwd, {
-      awaitWriteFinish: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 1000,
+        pollInterval: 10
+      },
       ignoreInitial: true,
     });
 
@@ -56,5 +59,5 @@ describe("bce integration", () => {
     });
 
     await proc.exited;
-  }, 10000);
+  });
 });
