@@ -10,9 +10,10 @@ import {
 } from "bun:test";
 import { Connection } from "../connection";
 import { KeepAlive } from "../keepAlive";
+import * as connection from "../connection"
 
 describe("keepAlive", () => {
-  const originalConnection = { ...Connection };
+  const originalConnection = { ...connection };
   let retryConnectMock: Mock<(...args: any[]) => any>;
 
   beforeEach(async () => {
@@ -31,6 +32,7 @@ describe("keepAlive", () => {
   afterEach(async () => {
     await mock.module("../connection", () => originalConnection);
   });
+
   test("should run constructor and keep service_worker alive", async () => {
     const originalChrome = { ...globalThis.chrome };
     const originalSetInterval = globalThis.setInterval;

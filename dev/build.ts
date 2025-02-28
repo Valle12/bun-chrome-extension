@@ -118,7 +118,10 @@ export class Build {
     await this.setServiceWorker();
 
     const watcher = watch(this.cwd, {
-      awaitWriteFinish: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 100,
+        pollInterval: 10
+      },
       ignored: file =>
         resolve(this.cwd, file).includes(this.config.outdir) ||
         file.includes("compose.ts") ||
