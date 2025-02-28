@@ -10,7 +10,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -18,11 +18,9 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.2.3
 
       - name: Install and Test dev package
-        run: cd dev && bun install --frozen-lockfile && bun test --only
+        run: cd dev && bun install --frozen-lockfile && bun test
 
       - name: Install and Test bce package
-        run: bun install --frozen-lockfile && bun test --only
+        run: bun install --frozen-lockfile && bun test
