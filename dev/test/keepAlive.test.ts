@@ -10,9 +10,10 @@ import {
 } from "bun:test";
 import { Connection } from "../connection";
 import { KeepAlive } from "../keepAlive";
+import * as connection from "../connection"
 
-describe.only("keepAlive", () => {
-  const originalConnection = { ...Connection };
+describe("keepAlive", () => {
+  const originalConnection = { ...connection };
   let retryConnectMock: Mock<(...args: any[]) => any>;
 
   beforeEach(async () => {
