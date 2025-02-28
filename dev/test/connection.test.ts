@@ -27,6 +27,7 @@ afterEach(() => {
 
 describe("connect", () => {
   test("should not connect if ws already exists", async () => {
+    console.log(connection);
     connection.ws = {} as WebSocket;
     spyOn(globalThis, "fetch").mockImplementation(() =>
       Promise.resolve(new Response())
