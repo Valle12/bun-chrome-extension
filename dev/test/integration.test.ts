@@ -4,7 +4,7 @@ import { rm } from "fs/promises";
 import { resolve } from "path";
 import { Connection } from "./resources/bceIntegration/connection";
 
-describe.only("bce integration", () => {
+describe("bce integration", () => {
   const cwd = resolve(import.meta.dir, "resources/bceIntegration");
 
   beforeAll(async () => {

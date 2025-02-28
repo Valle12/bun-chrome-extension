@@ -11,7 +11,7 @@ import {
 import { Connection } from "../connection";
 import { KeepAlive } from "../keepAlive";
 
-describe("keepAlive", () => {
+describe.only("keepAlive", () => {
   const originalConnection = { ...Connection };
   let retryConnectMock: Mock<(...args: any[]) => any>;
 
