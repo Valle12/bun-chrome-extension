@@ -31,6 +31,7 @@ describe.only("keepAlive", () => {
   afterEach(async () => {
     await mock.module("../connection", () => originalConnection);
   });
+
   test("should run constructor and keep service_worker alive", async () => {
     const originalChrome = { ...globalThis.chrome };
     const originalSetInterval = globalThis.setInterval;

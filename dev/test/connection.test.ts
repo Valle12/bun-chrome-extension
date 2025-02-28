@@ -25,7 +25,7 @@ afterEach(() => {
   mock.restore();
 });
 
-describe("connect", () => {
+describe.only("connect", () => {
   test("should not connect if ws already exists", async () => {
     console.log(connection);
     connection.ws = {} as WebSocket;
