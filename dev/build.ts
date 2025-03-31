@@ -120,7 +120,7 @@ export class Build {
     const watcher = watch(this.cwd, {
       awaitWriteFinish: {
         stabilityThreshold: 100,
-        pollInterval: 10
+        pollInterval: 10,
       },
       ignored: file =>
         resolve(this.cwd, file).includes(this.config.outdir) ||
@@ -266,6 +266,7 @@ export class Build {
   }
 
   posixPath(path: string) {
+    if (path.includes("://")) return path;
     return path.replaceAll(/\\/g, "/").replaceAll("//", "/");
   }
 }

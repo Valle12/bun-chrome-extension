@@ -23,10 +23,10 @@
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.3.2"
+    "@inquirer/prompts": "^7.4.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.4",
+    "@types/bun": "^1.2.8",
     "vitepress": "^1.6.3"
   },
   "peerDependencies": {
