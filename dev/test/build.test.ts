@@ -480,12 +480,19 @@ describe("parseManifest", () => {
   });
 
   test("test with content_scripts info", async () => {
+    const matches = [
+      "http://google.com/*",
+      "https://*.hello.world/cmd",
+      "https://*/*",
+      "<all_urls>",
+    ];
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       content_scripts: [
         {
           ts: [tsTest1],
+          matches,
         },
       ],
     });
@@ -497,6 +504,8 @@ describe("parseManifest", () => {
       .content_scripts as CustomContentScriptTest[];
     const js = contentScripts[0].js as string[];
     expect(js[0]).toBe("test1.js");
+    const matchesResult = contentScripts[0].matches as string[];
+    expect(matchesResult).toEqual(matches);
   });
 
   test("test with background and content_scripts info", async () => {
@@ -794,6 +803,7 @@ describe("parseManifest", () => {
   });
 
   test("test with everything", async () => {
+    const matches = ["https://google.com/*"];
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
@@ -811,6 +821,7 @@ describe("parseManifest", () => {
         {
           ts: [tsTest2],
           css: [cssTest1],
+          matches,
         },
       ],
     });
@@ -839,6 +850,8 @@ describe("parseManifest", () => {
     expect(js[0]).toBe("test2.js");
     const css = contentScripts[0].css as string[];
     expect(css[0]).toBe("test1.css");
+    const matchesResult = contentScripts[0].matches as string[];
+    expect(matchesResult).toEqual(matches);
     expect(build.manifest.action?.default_popup).toBe("popup.html");
     expect(build.manifest.options_page).toBe("optionsPage.html");
     expect(build.manifest.options_ui?.page).toBe("optionsUI.html");
@@ -898,12 +911,14 @@ describe("writeManifest", () => {
   });
 
   test("test with ts files", async () => {
+    const matches = ["https://www.youtube.com/watch?v=dQw4w9WgXcQ"];
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       content_scripts: [
         {
           ts: [tsTest1],
+          matches,
         },
       ],
     });
@@ -919,6 +934,8 @@ describe("writeManifest", () => {
       manifest.content_scripts as CustomContentScriptTest[];
     const js = contentScripts[0].js as string[];
     expect(js[0]).toBe("test1.js");
+    const matchesResult = contentScripts[0].matches as string[];
+    expect(matchesResult).toEqual(matches);
   });
 
   test("test with png in public folder", async () => {
@@ -1114,6 +1131,12 @@ describe("posixPath", () => {
     const posixPath = build.posixPath("test/test");
 
     expect(posixPath).toBe("test/test");
+  });
+
+  test("test with url", () => {
+    const posixPath = build.posixPath("https://test/test");
+
+    expect(posixPath).toBe("https://test/test");
   });
 });
 
