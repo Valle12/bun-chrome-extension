@@ -283,6 +283,8 @@ describe("extractPaths", () => {
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
+      description:
+        "Enables you to see solace messages directly in the browser.",
       content_scripts: [
         {
           ts: ["test1.ts"],
@@ -807,6 +809,8 @@ describe("parseManifest", () => {
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
+      description:
+        "Enables you to see solace messages directly in the browser.",
       background: {
         service_worker: tsTest1,
       },
