@@ -10,7 +10,7 @@ export class Build {
   config: Required<BCEConfig>;
   ws!: ServerWebSocket<WebSocketType>;
   cwd = process.cwd();
-  ignoreKeys = ["version"];
+  ignoreKeys = ["version", "description"];
   icons = [".png", ".bmp", ".gif", ".ico", ".jpeg"];
   originalServiceWorker: string | undefined;
   compose = resolve(this.cwd, "compose.ts");
