@@ -10,14 +10,15 @@
   ],
   "license": "MIT",
   "type": "module",
-  "main": "index.ts",
+  "main": "dist/index.js",
   "bin": {
-    "bun-chrome-extension": "index.ts"
+    "bun-chrome-extension": "dist/index.js"
   },
   "files": [
-    "index.ts"
+    "dist"
   ],
   "scripts": {
+    "build": "rm -rf dist && bun transform.ts && bunx tsc",
     "docs:build": "vitepress build docs",
     "docs:dev": "vitepress dev docs",
     "docs:preview": "vitepress preview docs"

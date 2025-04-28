@@ -9,19 +9,17 @@
   ],
   "license": "MIT",
   "type": "module",
-  "main": "bce.ts",
+  "main": "dist/bce.js",
   "bin": {
-    "bce": "bce.ts"
+    "bce": "dist/bce.js"
   },
   "files": [
-    "bce.ts",
-    "build.ts",
-    "composeTemplate.ts",
-    "connection.ts",
-    "keepAlive.ts",
-    "plugins.ts",
-    "types.ts"
+    "dist"
   ],
+  // Reference specific tsconfig for building
+  "scripts": {
+    "build": "rm -rf dist && bunx tsc bce.ts --declaration true --outDir dist"
+  },
   "dependencies": {
     "@types/chrome": "^0.0.313"
   },
