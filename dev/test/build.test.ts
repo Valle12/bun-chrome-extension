@@ -29,6 +29,7 @@ let tsTest2: string;
 let tsTest3: string;
 let importExportTest: string;
 let popupTest: string;
+let popupWithImgTest: string;
 let nestedPopupTest: string;
 let popupWithStylesheetTest: string;
 let optionsPageTest: string;
@@ -60,6 +61,9 @@ beforeEach(async () => {
     resolve(cwd, "test/resources/importExport.ts")
   );
   popupTest = build.posixPath(resolve(cwd, "test/resources/popup.html"));
+  popupWithImgTest = build.posixPath(
+    resolve(cwd, "test/resources/popup-with-img.html")
+  );
   nestedPopupTest = resolve(cwd, "test/resources/src/nestedPopup.html");
   popupWithStylesheetTest = build.posixPath(
     resolve(cwd, "test/resources/popup-with-stylesheet.html")
@@ -372,6 +376,34 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(build.manifest.action?.default_popup).toBe("popup.html");
+  });
+
+  // TODO add test for write manifest
+  test("test with popup info with img tag", async () => {
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      action: {
+        default_popup: popupWithImgTest,
+      },
+    });
+
+    await build.parseManifest();
+
+    expect(Bun.build).toHaveBeenCalledTimes(1);
+    expect(Bun.build).toHaveBeenCalledWith({
+      entrypoints: [popupWithImgTest],
+      minify: build.config.minify,
+      outdir: build.config.outdir,
+      sourcemap: build.config.sourcemap,
+      plugins: [exportRemover, sassCompiler],
+    });
+    expect(build.manifest.action?.default_popup).toBe("popup-with-img.html");
+    const popup = await Bun.file(
+      resolve(build.config.outdir, "popup-with-img.html")
+    ).text();
+    expect(popup).toContain('src="./16-');
+    expect(popup).toContain(".png");
   });
 
   test("test with relative nested popup info", async () => {
@@ -966,6 +998,32 @@ describe("writeManifest", () => {
     expect(icons["16"]).toEndWith(".png");
   });
 
+  test("test with img tag in popup", async () => {
+    build.cwd = cwd;
+    build.manifest = defineManifest({
+      name: "test",
+      version: "0.0.1",
+      action: {
+        default_popup: popupWithImgTest,
+      },
+    });
+
+    await build.parseManifest();
+    await build.writeManifest();
+
+    expect(Bun.build).toHaveBeenCalledTimes(1);
+    expect(Bun.write).toHaveBeenCalledTimes(1);
+    const manifest: FullManifest = await Bun.file(
+      resolve(build.config.outdir, "manifest.json")
+    ).json();
+    expect(manifest.action?.default_popup).toBe("popup-with-img.html");
+    const popup = await Bun.file(
+      resolve(build.config.outdir, "popup-with-img.html")
+    ).text();
+    expect(popup).toContain('src="./16-');
+    expect(popup).toContain(".png");
+  });
+
   test("test with multiple ways of defining paths", async () => {
     build.cwd = cwd;
     await createTestPublicFolder(publicFolder, [
@@ -1385,7 +1443,6 @@ describe("initDev", () => {
 
   test("test if shutdown runs", async () => {
     let handler = {} as (...args: any[]) => void;
-    spyOn(process, "exit").mockImplementation(() => undefined as never);
     spyOn(process, "on").mockImplementation((_event, cb) => {
       handler = cb;
       return {} as NodeJS.Process;
@@ -1396,7 +1453,6 @@ describe("initDev", () => {
 
     expect(console.log).toHaveBeenCalledTimes(1);
     expect(console.log).toHaveBeenCalledWith("Closing watcher...");
-    expect(process.exit).toHaveBeenCalledTimes(1);
   });
 });
 

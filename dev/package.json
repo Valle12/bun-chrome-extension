@@ -23,12 +23,12 @@
     "types.ts"
   ],
   "dependencies": {
-    "@types/chrome": "^0.0.317",
+    "@types/chrome": "^0.1.1",
     "chokidar": "^4.0.3",
-    "sass": "^1.87.0"
+    "sass": "^1.89.2"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.10"
+    "@types/bun": "^1.2.19"
   },
   "peerDependencies": {
     "typescript": "^5.8.3"

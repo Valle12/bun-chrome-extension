@@ -81,6 +81,7 @@ export type BCEConfig = Omit<
   | "env"
   | "drop"
   | "throw"
+  | "tsconfig"
 >;
 
 export function defineConfig(config: BCEConfig): BCEConfig {

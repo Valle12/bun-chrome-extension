@@ -23,13 +23,13 @@
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.4.0"
+    "@inquirer/prompts": "^7.7.1"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.8",
+    "@types/bun": "^1.2.19",
     "vitepress": "^1.6.3"
   },
   "peerDependencies": {
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }
