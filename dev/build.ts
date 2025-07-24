@@ -142,9 +142,10 @@ export class Build {
       this.ws.send("reload");
     });
 
-    process.on("SIGINT", async () => {
+    process.on("SIGINT", () => {
       console.log("Closing watcher...");
-      await watcher.close();
+      watcher.close();
+      process.exit();
     });
   }
 

@@ -21,12 +21,13 @@ describe("bce integration", () => {
       cwd,
       env: { ...process.env, LOCAL: "true" },
       stdout: "ignore",
+      stderr: "ignore",
     });
 
     const watcher = watch(cwd, {
       awaitWriteFinish: {
         stabilityThreshold: 1000,
-        pollInterval: 10
+        pollInterval: 10,
       },
       ignoreInitial: true,
     });
