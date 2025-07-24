@@ -181,12 +181,7 @@ export class Build {
           (output.path.endsWith(".css") &&
             output.loader === "html" &&
             output.kind === "asset") ||
-          (output.path.endsWith(".js") &&
-            output.loader === "file" &&
-            output.kind === "entry-point") ||
-          (output.path.endsWith(".svg") &&
-            output.loader === "file" &&
-            output.kind === "asset")
+          (output.loader === "file" && output.kind === "asset")
         ) {
           continue;
         }
@@ -196,8 +191,16 @@ export class Build {
           output.path
         );
 
-        if (this.icons.includes(extname(pathInOutdir))) {
-          const pathInOutdirParts = pathInOutdir.split("-");
+        let outputPath = output.path;
+        if (
+          output.path.endsWith(".js") &&
+          output.loader === "file" &&
+          output.kind === "entry-point"
+        ) {
+          const module = await import(output.path);
+          pathInOutdir = module.default.replaceAll("./", "");
+          outputPath = pathInOutdir;
+          const pathInOutdirParts = outputPath.split("-");
           pathInOutdirParts.pop();
           pathInOutdir = pathInOutdirParts.join("") + extname(pathInOutdir);
         }
@@ -221,7 +224,10 @@ export class Build {
 
         manifestJson = manifestJson.replaceAll(
           entrypoint,
-          this.relativePosixPath(this.config.outdir, output.path)
+          this.relativePosixPath(
+            this.config.outdir,
+            resolve(this.config.outdir, outputPath)
+          )
         );
       }
       this.manifest = JSON.parse(manifestJson);
