@@ -49,7 +49,7 @@ export class Index {
       stderr: "ignore",
     }).exited;
     await Bun.spawn({
-      cmd: ["git", "checkout", "master"],
+      cmd: ["git", "checkout", "main"],
       cwd: answer,
       stdout: "ignore",
       stderr: "ignore",
