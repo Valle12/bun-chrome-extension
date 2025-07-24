@@ -55,7 +55,7 @@ jobs:
           PACKAGEJSON_DIR: "dev"
 
       - name: PR to main
-        run: gh pr create -B master -H version-dev -t "Bump version" -b "New version" --no-maintainer-edit
+        run: gh pr create -B main -H version-dev -t "Bump version" -b "New version" --no-maintainer-edit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
