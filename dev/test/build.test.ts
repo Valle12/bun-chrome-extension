@@ -342,7 +342,10 @@ describe("extractPaths", () => {
 });
 
 describe("parseManifest", () => {
+  let publicFolder: string;
+
   beforeEach(() => {
+    publicFolder = resolve(cwd, "public");
     spyOn(Bun, "build");
     spyOn(Bun, "write");
   });
@@ -378,13 +381,16 @@ describe("parseManifest", () => {
     expect(build.manifest.action?.default_popup).toBe("popup.html");
   });
 
-  // TODO add test for write manifest
   test("test with popup info with img tag", async () => {
+    await createTestPublicFolder(publicFolder, ["test/resources/icons/16.png"]);
     build.manifest = defineManifest({
       name: "test",
       version: "0.0.1",
       action: {
         default_popup: popupWithImgTest,
+      },
+      icons: {
+        "16": img16,
       },
     });
 
@@ -392,18 +398,25 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popupWithImgTest],
+      entrypoints: [popupWithImgTest, img16],
       minify: build.config.minify,
       outdir: build.config.outdir,
       sourcemap: build.config.sourcemap,
       plugins: [exportRemover, sassCompiler],
     });
-    expect(build.manifest.action?.default_popup).toBe("popup-with-img.html");
-    const popup = await Bun.file(
-      resolve(build.config.outdir, "popup-with-img.html")
-    ).text();
-    expect(popup).toContain('src="./16-');
-    expect(popup).toContain(".png");
+
+    const popupPath = resolve(
+      build.config.outdir,
+      build.manifest.action?.default_popup as string
+    );
+    const popup = await Bun.file(popupPath).text();
+    const imgPath = popup.match(/<img src="([^"]+)"/)?.[1] as string;
+    const resolved = resolve(popupPath, "..", imgPath);
+    expect(await Bun.file(resolved).exists()).toBeTrue();
+
+    const iconPath = build.manifest.icons?.[16] as string;
+    const resolvedIcon = resolve(build.config.outdir, iconPath);
+    expect(await Bun.file(resolvedIcon).exists()).toBeTrue();
   });
 
   test("test with relative nested popup info", async () => {
@@ -1020,7 +1033,7 @@ describe("writeManifest", () => {
     const popup = await Bun.file(
       resolve(build.config.outdir, "popup-with-img.html")
     ).text();
-    expect(popup).toContain('src="./16-');
+    expect(popup).toContain('src="./test-');
     expect(popup).toContain(".png");
   });
 

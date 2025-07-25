@@ -1,6 +1,6 @@
 import type { ServerWebSocket } from "bun";
 import { watch } from "chokidar";
-import { extname, relative, resolve } from "path";
+import { dirname, extname, relative, resolve } from "path";
 import { posix } from "path/posix";
 import { exportRemover, sassCompiler } from "./plugins";
 import type { BCEConfig, FullManifest, WebSocketType } from "./types";
@@ -198,7 +198,11 @@ export class Build {
           output.kind === "entry-point"
         ) {
           const module = await import(output.path);
-          pathInOutdir = module.default.replaceAll("./", "");
+          const resolvedOutput = resolve(dirname(output.path), module.default);
+          pathInOutdir = this.relativePosixPath(
+            this.config.outdir,
+            resolvedOutput
+          );
           outputPath = pathInOutdir;
           const pathInOutdirParts = outputPath.split("-");
           pathInOutdirParts.pop();
