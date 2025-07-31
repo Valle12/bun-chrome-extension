@@ -47,3 +47,25 @@ exports[`bce integration test if watching and reloading works as expected 4`] = 
 "class o{constructor(){console.log("Solace")}}new o;
 "
 `;
+
+exports[`bce integration test if watching and reloading works as expected 5`] = `
+"{
+  "manifest_version": 3,
+  "name": "Test",
+  "version": "0.0.1",
+  "background": {
+    "service_worker": "compose.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": []
+    }
+  ]
+}"
+`;
+
+exports[`bce integration test if watching and reloading works as expected 6`] = `
+"class o{constructor(){console.log("Solace")}}new o;
+"
+`;

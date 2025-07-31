@@ -133,8 +133,12 @@ export class Build {
     watcher.on("all", async () => {
       console.clear();
       console.log("Rebuild project...");
+      // Need cacheBust to always get the latest manifest.ts
       const manifestModule = await import(
-        resolve(process.cwd(), "manifest.ts")
+        resolve(
+          process.cwd(),
+          `manifest.ts?cacheBust=${Date.now()}${Math.random()}`
+        )
       );
       this.manifest = manifestModule.manifest;
       await this.setServiceWorker();
