@@ -1,17 +1,21 @@
-import { afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { watch } from "chokidar";
 import { rm } from "fs/promises";
 import { resolve } from "path";
 import { Connection } from "./resources/bceIntegration/connection";
 
 describe("bce integration", () => {
+  let originalManifestContent: string;
   const cwd = resolve(import.meta.dir, "resources/bceIntegration");
+  const manifestPath = resolve(cwd, "manifest.ts");
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    originalManifestContent = await Bun.file(manifestPath).text();
     await rm(resolve(cwd, "dist"), { recursive: true, force: true });
   });
 
   afterEach(async () => {
+    await Bun.write(manifestPath, originalManifestContent);
     await rm(resolve(cwd, "dist"), { recursive: true, force: true });
   });
 
@@ -26,7 +30,7 @@ describe("bce integration", () => {
 
     const watcher = watch(cwd, {
       awaitWriteFinish: {
-        stabilityThreshold: 1000,
+        stabilityThreshold: 100,
         pollInterval: 10,
       },
       ignoreInitial: true,
@@ -54,7 +58,29 @@ describe("bce integration", () => {
         const content = await solace.text();
         await Bun.write(solace, content);
       } else if (counter === 2) {
+        const content = originalManifestContent.replaceAll(
+          'ts: ["src/solace.ts"]',
+          "ts: []"
+        );
+        await Bun.write(manifestPath, content);
+      }
+    });
+
+    const distWatcher = watch(resolve(cwd, "dist"), {
+      ignoreInitial: true,
+    });
+
+    let manifestCounter = 0;
+    distWatcher.on("all", async (_event, filename) => {
+      if (!filename.endsWith("manifest.json")) return;
+      // The third time solace.js is not in manifest.json, but dist still contains unused files until process restarted
+      expect(
+        await Bun.file(resolve(cwd, "dist/src/solace.js")).exists()
+      ).toBeTrue();
+      manifestCounter++;
+      if (manifestCounter === 3) {
         watcher.close();
+        distWatcher.close();
         proc.kill("SIGINT");
       }
     });
