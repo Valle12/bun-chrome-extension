@@ -20,12 +20,15 @@ describe("bce integration", () => {
   });
 
   test("test if watching and reloading works as expected", async () => {
+    expect.assertions(12);
+
     const proc = Bun.spawn({
       cmd: ["bun", "./../../../bce.ts", "--dev"],
       cwd,
       env: { ...process.env, LOCAL: "true" },
       stdout: "ignore",
       stderr: "ignore",
+      stdin: "pipe",
     });
 
     const watcher = watch(cwd, {
@@ -63,6 +66,10 @@ describe("bce integration", () => {
           "ts: []"
         );
         await Bun.write(manifestPath, content);
+      } else if (counter === 3 && manifestCounter === 3) {
+        distWatcher.close();
+        watcher.close();
+        proc.stdin.write("\u0003"); // Simulate CTRL + C
       }
     });
 
@@ -78,10 +85,10 @@ describe("bce integration", () => {
         await Bun.file(resolve(cwd, "dist/src/solace.js")).exists()
       ).toBeTrue();
       manifestCounter++;
-      if (manifestCounter === 3) {
+      if (counter === 3 && manifestCounter === 3) {
         watcher.close();
         distWatcher.close();
-        proc.kill("SIGINT");
+        proc.stdin.write("\u0003"); // Simulate CTRL + C
       }
     });
 

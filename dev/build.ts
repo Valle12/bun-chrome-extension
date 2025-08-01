@@ -2,6 +2,7 @@ import type { ServerWebSocket } from "bun";
 import { watch } from "chokidar";
 import { dirname, extname, relative, resolve } from "path";
 import { posix } from "path/posix";
+import { stdin } from "process";
 import { exportRemover, sassCompiler } from "./plugins";
 import type { BCEConfig, FullManifest, WebSocketType } from "./types";
 
@@ -146,10 +147,13 @@ export class Build {
       this.ws.send("reload");
     });
 
-    process.on("SIGINT", () => {
-      console.log("Closing watcher...");
-      watcher.close();
-      process.exit();
+    stdin.on("data", data => {
+      // CTRL + C
+      if (data.toString() === "\u0003") {
+        console.log("Closing watcher...");
+        watcher.close();
+        process.exit();
+      }
     });
   }
 
