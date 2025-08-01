@@ -66,14 +66,16 @@ describe("bce integration", () => {
           "ts: []"
         );
         await Bun.write(manifestPath, content);
-      } else if (counter === 3 && manifestCounter === 3) {
-        distWatcher.close();
+      } else if (counter === 3) {
         watcher.close();
-        proc.stdin.write("\u0003"); // Simulate CTRL + C
       }
     });
 
     const distWatcher = watch(resolve(cwd, "dist"), {
+      awaitWriteFinish: {
+        stabilityThreshold: 100,
+        pollInterval: 10,
+      },
       ignoreInitial: true,
     });
 
@@ -85,8 +87,7 @@ describe("bce integration", () => {
         await Bun.file(resolve(cwd, "dist/src/solace.js")).exists()
       ).toBeTrue();
       manifestCounter++;
-      if (counter === 3 && manifestCounter === 3) {
-        watcher.close();
+      if (manifestCounter === 3) {
         distWatcher.close();
         proc.stdin.write("\u0003"); // Simulate CTRL + C
       }
