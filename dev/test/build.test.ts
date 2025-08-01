@@ -13,6 +13,7 @@ import * as chokidar from "chokidar";
 import { mkdir, readdir, rm } from "fs/promises";
 import * as path from "path";
 import { join, relative, resolve } from "path";
+import { stdin } from "process";
 import { Build } from "../build";
 import { exportRemover, sassCompiler } from "../plugins";
 import type {
@@ -1454,18 +1455,29 @@ describe("initDev", () => {
     expect(build.ws.send).toHaveBeenCalledWith("reload");
   });
 
-  test("test if shutdown runs", async () => {
-    let handler = {} as (...args: any[]) => void;
-    spyOn(process, "on").mockImplementation((_event, cb) => {
-      handler = cb;
-      return {} as NodeJS.Process;
-    });
+  test("test with unrelated keys", async () => {
+    const spy = spyOn(stdin, "on");
 
     await build.initDev();
-    handler();
+
+    const cb: (data: Buffer) => void = spy.mock.calls[0][1];
+    cb(Buffer.from("\u0004"));
+
+    expect(console.log).toHaveBeenCalledTimes(0);
+  });
+
+  test("test if shutdown runs", async () => {
+    const spy = spyOn(stdin, "on");
+    spyOn(process, "exit").mockImplementation(() => undefined as never);
+
+    await build.initDev();
+
+    const cb: (data: Buffer) => void = spy.mock.calls[0][1];
+    cb(Buffer.from("\u0003"));
 
     expect(console.log).toHaveBeenCalledTimes(1);
     expect(console.log).toHaveBeenCalledWith("Closing watcher...");
+    expect(process.exit).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -16,6 +16,7 @@ describe("bce", async () => {
   const originalBuild = {
     ...build,
   };
+  const originalSetRawMode = process.stdin.setRawMode;
   let buildMock = {} as Mock<(...args: any[]) => any>;
   let parseMock = {} as Mock<(...args: any[]) => any>;
   let initDevMock = {} as Mock<(...args: any[]) => any>;
@@ -38,9 +39,17 @@ describe("bce", async () => {
       };
     });
     spyOn(console, "log").mockImplementation(() => {});
+    Object.defineProperty(process.stdin, "setRawMode", {
+      value: mock(),
+      configurable: true,
+    });
   });
 
   afterEach(async () => {
+    Object.defineProperty(process.stdin, "setRawMode", {
+      value: originalSetRawMode,
+      configurable: true,
+    });
     mock.restore();
     await mock.module("../build", () => originalBuild);
   });

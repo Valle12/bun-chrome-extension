@@ -1,12 +1,20 @@
 #!/usr/bin/env bun
 import { rm } from "fs/promises";
 import { resolve } from "path";
+import { stdin } from "process";
 import { Build } from "./build";
 import type { BCEConfig, FullManifest } from "./types";
 
 export { defineManifest } from "./types";
 
 await rm(resolve(process.cwd(), "dist"), { recursive: true, force: true });
+
+// Set up stdin to listen for CTRL + C later
+if (stdin.isTTY) {
+  stdin.setRawMode(true);
+  stdin.resume();
+  stdin.setEncoding("utf8");
+}
 
 const configFile = resolve(process.cwd(), "bce.config.ts");
 let config: BCEConfig | undefined;
