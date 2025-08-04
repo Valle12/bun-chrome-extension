@@ -118,6 +118,13 @@ export class Build {
   async initDev() {
     await this.setServiceWorker();
 
+    // Set up stdin to listen for CTRL + C later
+    if (stdin.isTTY) {
+      stdin.setRawMode(true);
+      stdin.resume();
+      stdin.setEncoding("utf8");
+    }
+
     const watcher = watch(this.cwd, {
       awaitWriteFinish: {
         stabilityThreshold: 100,
