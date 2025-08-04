@@ -9,19 +9,16 @@
   ],
   "license": "MIT",
   "type": "module",
-  "main": "bce.ts",
+  "main": "dist/bce.js",
   "bin": {
-    "bce": "bce.ts"
+    "bce": "dist/bce.js"
   },
   "files": [
-    "bce.ts",
-    "build.ts",
-    "composeTemplate.ts",
-    "connection.ts",
-    "keepAlive.ts",
-    "plugins.ts",
-    "types.ts"
+    "dist"
   ],
+  "scripts": {
+    "build": "bun packager.ts && bunx tsc --project tsconfig.json"
+  },
   "dependencies": {
     "@types/chrome": "^0.1.1",
     "chokidar": "^4.0.3",

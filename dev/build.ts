@@ -14,7 +14,7 @@ export class Build {
   ignoreKeys = ["version", "description"];
   icons = [".png", ".bmp", ".gif", ".ico", ".jpeg"];
   originalServiceWorker: string | undefined;
-  compose = resolve(this.cwd, "compose.ts");
+  compose = resolve(this.cwd, "compose.js");
   firstConnect = true;
   package =
     Bun.env.LOCAL === "true"
@@ -39,6 +39,10 @@ export class Build {
   }
 
   async setServiceWorker() {
+    let composeContent = await Bun.file(
+      resolve(import.meta.dir, "composeTemplate.js")
+    ).text();
+
     if (
       !this.manifest.background ||
       !(await Bun.file(
@@ -46,35 +50,8 @@ export class Build {
       ).exists())
     ) {
       console.log("No background service worker found, creating one...");
-      let composeContent = await Bun.file(
-        resolve(import.meta.dir, "composeTemplate.ts")
-      ).text();
-      composeContent = composeContent.replaceAll(
-        "./connection",
-        `${this.package}/connection`
-      );
-      composeContent = composeContent.replaceAll(
-        "./keepAlive",
-        `${this.package}/keepAlive`
-      );
-      await Bun.write(this.compose, composeContent);
-      this.manifest.background = {
-        service_worker: this.compose,
-        type: "module",
-      };
     } else {
       console.log("Background service worker found, creating compose...");
-      let composeContent = await Bun.file(
-        resolve(import.meta.dir, "composeTemplate.ts")
-      ).text();
-      composeContent = composeContent.replaceAll(
-        "./connection",
-        `${this.package}/connection`
-      );
-      composeContent = composeContent.replaceAll(
-        "./keepAlive",
-        `${this.package}/keepAlive`
-      );
       composeContent = composeContent.replaceAll(
         "// IMPORT // Do not remove!",
         `import "./${this.relativePosixPath(
@@ -82,12 +59,13 @@ export class Build {
           this.originalServiceWorker as string
         )}";`
       );
-      await Bun.write(this.compose, composeContent);
-      this.manifest.background = {
-        service_worker: this.compose,
-        type: "module",
-      };
     }
+
+    await Bun.write(this.compose, composeContent);
+    this.manifest.background = {
+      service_worker: this.compose,
+      type: "module",
+    };
   }
 
   openWebsocket(ws: ServerWebSocket<WebSocketType>) {
@@ -132,7 +110,7 @@ export class Build {
       },
       ignored: file =>
         resolve(this.cwd, file).includes(this.config.outdir) ||
-        file.includes("compose.ts") ||
+        file.includes("compose.js") ||
         file.includes("node_modules") ||
         file.includes(".git"),
       ignoreInitial: true,

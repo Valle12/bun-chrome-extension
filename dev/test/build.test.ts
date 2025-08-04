@@ -1217,15 +1217,28 @@ describe("posixPath", () => {
 });
 
 describe("setServiceWorker", () => {
+  let composeTemplate: string;
+  let testServiceWorker: string;
+
   beforeEach(() => {
     spyOn(console, "log").mockImplementation(() => {});
     spyOn(Bun, "write");
     spyOn(Bun, "file");
+
+    const compose = resolve(build.cwd, "compose.js");
+    composeTemplate = resolve(cwd, "composeTemplate.ts");
+    testServiceWorker = resolve(build.cwd, "test");
+    spyOn(path, "resolve").mockImplementation((...paths: string[]) => {
+      if (paths.at(-1) === "compose.js") return compose;
+      if (paths.at(-1) === "composeTemplate.js") return composeTemplate;
+      if (paths.at(-1) === "test") return testServiceWorker;
+      return tsTest1;
+    });
   });
 
   afterEach(async () => {
     mock.restore();
-    await rm(resolve(build.cwd, "compose.ts"), {
+    await rm(resolve(build.cwd, "compose.js"), {
       recursive: true,
       force: true,
     });
@@ -1244,8 +1257,10 @@ describe("setServiceWorker", () => {
       "No background service worker found, creating one..."
     );
     expect(Bun.file).toHaveBeenCalledTimes(1);
-    expect(Bun.file).toHaveBeenCalledWith(resolve(cwd, "composeTemplate.ts"));
-    const compose = resolve(build.cwd, "compose.ts");
+    expect(Bun.file).toHaveBeenCalledWith(
+      resolve(build.config.outdir, "composeTemplate.js")
+    );
+    const compose = resolve(build.cwd, "compose.js");
     expect(Bun.write).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledWith(compose, expect.anything());
     expect(build.manifest.background).toEqual({
@@ -1270,13 +1285,10 @@ describe("setServiceWorker", () => {
     await build.setServiceWorker();
 
     expect(Bun.file).toHaveBeenCalledTimes(2);
-    expect(Bun.file).toHaveBeenNthCalledWith(1, resolve(build.cwd, "test"));
-    expect(Bun.file).toHaveBeenNthCalledWith(
-      2,
-      resolve(cwd, "composeTemplate.ts")
-    );
+    expect(Bun.file).toHaveBeenNthCalledWith(1, composeTemplate);
+    expect(Bun.file).toHaveBeenNthCalledWith(2, testServiceWorker);
     expect(build.manifest.background).toEqual({
-      service_worker: resolve(build.cwd, "compose.ts"),
+      service_worker: resolve(build.cwd, "compose.js"),
       type: "module",
     });
   });
@@ -1301,7 +1313,7 @@ describe("setServiceWorker", () => {
     );
     expect(build.relativePosixPath).toHaveBeenCalledTimes(1);
     expect(build.relativePosixPath).toHaveBeenCalledWith(build.cwd, tsTest1);
-    const compose = resolve(build.cwd, "compose.ts");
+    const compose = resolve(build.cwd, "compose.js");
     expect(Bun.write).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledWith(compose, expect.any(String));
     expect(build.manifest.background).toEqual({
