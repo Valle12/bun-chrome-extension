@@ -2,28 +2,35 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { watch } from "chokidar";
 import { rm } from "fs/promises";
 import { resolve } from "path";
+import { build } from "../packager";
 import { Connection } from "./resources/bceIntegration/connection";
 
 describe("bce integration", () => {
   let originalManifestContent: string;
   const cwd = resolve(import.meta.dir, "resources/bceIntegration");
+  const dist = resolve(cwd, "dist");
+  const run = resolve(cwd, "run");
   const manifestPath = resolve(cwd, "manifest.ts");
 
   beforeEach(async () => {
     originalManifestContent = await Bun.file(manifestPath).text();
-    await rm(resolve(cwd, "dist"), { recursive: true, force: true });
+    await rm(dist, { recursive: true, force: true });
+    await rm(run, { recursive: true, force: true });
   });
 
   afterEach(async () => {
     await Bun.write(manifestPath, originalManifestContent);
-    await rm(resolve(cwd, "dist"), { recursive: true, force: true });
+    await rm(dist, { recursive: true, force: true });
+    await rm(run, { recursive: true, force: true });
   });
 
   test("test if watching and reloading works as expected", async () => {
     expect.assertions(12);
 
+    await build(run);
+
     const proc = Bun.spawn({
-      cmd: ["bun", "./../../../bce.ts", "--dev"],
+      cmd: ["bun", resolve(run, "bce.js"), "--dev"],
       cwd,
       env: { ...process.env, LOCAL: "true" },
       stdout: "ignore",
@@ -45,14 +52,10 @@ describe("bce integration", () => {
       counter++;
       new Connection().connect();
 
-      const manifest = await Bun.file(
-        resolve(cwd, "dist/manifest.json")
-      ).text();
+      const manifest = await Bun.file(resolve(dist, "manifest.json")).text();
       expect(manifest).toMatchSnapshot();
 
-      const solaceDist = await Bun.file(
-        resolve(cwd, "dist/src/solace.js")
-      ).text();
+      const solaceDist = await Bun.file(resolve(dist, "src/solace.js")).text();
       expect(solaceDist).not.toContain("export");
       expect(solaceDist).toMatchSnapshot();
 
@@ -71,7 +74,7 @@ describe("bce integration", () => {
       }
     });
 
-    const distWatcher = watch(resolve(cwd, "dist"), {
+    const distWatcher = watch(dist, {
       awaitWriteFinish: {
         stabilityThreshold: 100,
         pollInterval: 10,
@@ -84,7 +87,7 @@ describe("bce integration", () => {
       if (!filename.endsWith("manifest.json")) return;
       // The third time solace.js is not in manifest.json, but dist still contains unused files until process restarted
       expect(
-        await Bun.file(resolve(cwd, "dist/src/solace.js")).exists()
+        await Bun.file(resolve(dist, "src/solace.js")).exists()
       ).toBeTrue();
       manifestCounter++;
       if (manifestCounter === 3) {
