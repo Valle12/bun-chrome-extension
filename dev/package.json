@@ -20,14 +20,14 @@
     "build": "bun packager.ts && bunx tsc --project tsconfig.json"
   },
   "dependencies": {
-    "@types/chrome": "^0.1.1",
+    "@types/chrome": "^0.1.4",
     "chokidar": "^4.0.3",
-    "sass": "^1.89.2"
+    "sass": "^1.92.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.19"
+    "@types/bun": "^1.2.21"
   },
   "peerDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   }
 }

@@ -4,7 +4,7 @@ import { resolve } from "path";
 import { Build } from "./build";
 import type { BCEConfig, FullManifest } from "./types";
 
-export { defineManifest } from "./types";
+export { defineConfig, defineManifest } from "./types";
 
 await rm(resolve(process.cwd(), "dist"), { recursive: true, force: true });
 
