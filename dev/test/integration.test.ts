@@ -67,18 +67,10 @@ describe("bce integration", () => {
         stderr: "pipe",
       });
 
-      if (!proc.stdout) {
-        // Try to get more info about why spawn failed
-        const exitCode = await proc.exited;
-        throw new Error(
-          `Failed to spawn process at ${bceJsPath} with cwd ${cwd}. Exit code: ${exitCode}`,
-        );
-      }
-
       const logs: string[] = [];
       const decoder = new TextDecoder();
       (async () => {
-        for await (const chunk of proc.stdout!) {
+        for await (const chunk of proc.stdout) {
           logs.push(decoder.decode(chunk));
         }
       })();
