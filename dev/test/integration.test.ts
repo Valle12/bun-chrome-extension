@@ -54,18 +54,27 @@ describe("bce integration", () => {
     async () => {
       await build(run);
 
+      const bceJsPath = resolve(run, "bce.js");
+      if (!(await Bun.file(bceJsPath).exists())) {
+        throw new Error(`Build failed: ${bceJsPath} does not exist`);
+      }
+
       const proc = Bun.spawn({
-        cmd: ["bun", resolve(run, "bce.js"), "--dev"],
+        cmd: ["bun", bceJsPath, "--dev"],
         cwd,
         env: { ...process.env, LOCAL: "true" },
         stdout: "pipe",
         stderr: "pipe",
       });
 
+      if (!proc.stdout) {
+        throw new Error("Failed to spawn process - stdout is undefined");
+      }
+
       const logs: string[] = [];
       const decoder = new TextDecoder();
       (async () => {
-        for await (const chunk of proc.stdout) {
+        for await (const chunk of proc.stdout!) {
           logs.push(decoder.decode(chunk));
         }
       })();
