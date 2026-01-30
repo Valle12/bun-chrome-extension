@@ -60,7 +60,7 @@ describe("bce integration", () => {
       }
 
       const proc = Bun.spawn({
-        cmd: [process.execPath, "run", bceJsPath, "--dev"],
+        cmd: [process.execPath, bceJsPath, "--dev"],
         cwd,
         env: { ...process.env, LOCAL: "true" },
         stdout: "pipe",
