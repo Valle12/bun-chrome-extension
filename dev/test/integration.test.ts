@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { watch } from "chokidar";
 import { rm } from "fs/promises";
 import { resolve } from "path";
 import { build } from "../packager";
-import { Connection } from "./resources/bceIntegration/connection";
 
 describe("bce integration", () => {
   let originalManifestContent: string;
@@ -11,6 +9,33 @@ describe("bce integration", () => {
   const dist = resolve(cwd, "dist");
   const run = resolve(cwd, "run");
   const manifestPath = resolve(cwd, "manifest.ts");
+  const solaceSrcPath = resolve(cwd, "src/solace.ts");
+  const distManifestPath = resolve(dist, "manifest.json");
+  const distSolacePath = resolve(dist, "src/solace.js");
+
+  async function waitForFile(path: string, timeout = 10000): Promise<string> {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const file = Bun.file(path);
+      if (await file.exists()) {
+        const content = await file.text();
+        if (content.length > 0) return content;
+      }
+      await Bun.sleep(100);
+    }
+    throw new Error(`Timeout waiting for ${path}`);
+  }
+
+  async function waitForRebuild(timeout = 10000): Promise<void> {
+    const start = Date.now();
+    const initialMtime = (await Bun.file(distManifestPath).stat()).mtime;
+    while (Date.now() - start < timeout) {
+      const stat = await Bun.file(distManifestPath).stat();
+      if (stat.mtime > initialMtime) return;
+      await Bun.sleep(100);
+    }
+    throw new Error("Timeout waiting for rebuild");
+  }
 
   beforeEach(async () => {
     originalManifestContent = await Bun.file(manifestPath).text();
@@ -24,78 +49,69 @@ describe("bce integration", () => {
     await rm(run, { recursive: true, force: true });
   });
 
-  test("test if watching and reloading works as expected", async () => {
-    expect.assertions(12);
+  test(
+    "dev server watches for changes and rebuilds correctly",
+    async () => {
+      await build(run);
 
-    await build(run);
+      const proc = Bun.spawn({
+        cmd: ["bun", resolve(run, "bce.js"), "--dev"],
+        cwd,
+        env: { ...process.env, LOCAL: "true" },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
 
-    const proc = Bun.spawn({
-      cmd: ["bun", resolve(run, "bce.js"), "--dev"],
-      cwd,
-      env: { ...process.env, LOCAL: "true" },
-      stdout: "ignore",
-      stderr: "ignore",
-      stdin: "pipe",
-    });
+      const logs: string[] = [];
+      const decoder = new TextDecoder();
+      (async () => {
+        for await (const chunk of proc.stdout) {
+          logs.push(decoder.decode(chunk));
+        }
+      })();
 
-    const watcher = watch(cwd, {
-      awaitWriteFinish: {
-        stabilityThreshold: 100,
-        pollInterval: 10,
-      },
-      ignoreInitial: true,
-    });
+      try {
+        // 1. Wait for initial build
+        const manifest1 = await waitForFile(distManifestPath);
+        const solace1 = await waitForFile(distSolacePath);
+        expect(manifest1).toMatchSnapshot("manifest-initial");
+        expect(solace1).toMatchSnapshot("solace-initial");
 
-    let counter = 0;
-    watcher.on("all", async (_event, filename) => {
-      if (!filename.includes("manifest.json")) return;
-      counter++;
-      new Connection().connect();
+        // 2. Test WebSocket connection
+        const ws1 = new WebSocket("ws://localhost:8080");
+        await new Promise<void>((res, rej) => {
+          ws1.onopen = () => res();
+          ws1.onerror = rej;
+        });
+        ws1.close();
 
-      const manifest = await Bun.file(resolve(dist, "manifest.json")).text();
-      expect(manifest).toMatchSnapshot();
+        // 3. Touch file (save without changes) - triggers rebuild
+        const solaceContent = await Bun.file(solaceSrcPath).text();
+        await Bun.write(solaceSrcPath, solaceContent);
+        await waitForRebuild();
+        const manifest2 = await Bun.file(distManifestPath).text();
+        expect(manifest2).toMatchSnapshot("manifest-after-noop");
 
-      const solaceDist = await Bun.file(resolve(dist, "src/solace.js")).text();
-      expect(solaceDist).not.toContain("export");
-      expect(solaceDist).toMatchSnapshot();
-
-      if (counter === 1) {
-        const solace = Bun.file(resolve(cwd, "src/solace.ts"));
-        const content = await solace.text();
-        await Bun.write(solace, content);
-      } else if (counter === 2) {
-        const content = originalManifestContent.replaceAll(
+        // 4. Remove solace.ts from manifest
+        const modifiedManifest = originalManifestContent.replace(
           'ts: ["src/solace.ts"]',
-          "ts: []"
+          "ts: []",
         );
-        await Bun.write(manifestPath, content);
-      } else if (counter === 3) {
-        watcher.close();
+        await Bun.write(manifestPath, modifiedManifest);
+        await waitForRebuild();
+        const manifest3 = await Bun.file(distManifestPath).text();
+        expect(manifest3).toMatchSnapshot("manifest-after-removal");
+        expect(manifest3).not.toContain("solace");
+
+        // 5. Verify logs
+        await Bun.sleep(200);
+        expect(logs.some(l => l.includes("Connection established"))).toBeTrue();
+        expect(logs.some(l => l.includes("Rebuild project"))).toBeTrue();
+      } finally {
+        proc.kill();
+        await proc.exited;
       }
-    });
-
-    const distWatcher = watch(dist, {
-      awaitWriteFinish: {
-        stabilityThreshold: 100,
-        pollInterval: 10,
-      },
-      ignoreInitial: true,
-    });
-
-    let manifestCounter = 0;
-    distWatcher.on("all", async (_event, filename) => {
-      if (!filename.endsWith("manifest.json")) return;
-      // The third time solace.js is not in manifest.json, but dist still contains unused files until process restarted
-      expect(
-        await Bun.file(resolve(dist, "src/solace.js")).exists()
-      ).toBeTrue();
-      manifestCounter++;
-      if (manifestCounter === 3) {
-        distWatcher.close();
-        proc.stdin.write("\u0003"); // Simulate CTRL + C
-      }
-    });
-
-    await proc.exited;
-  });
+    },
+    { timeout: 30000 },
+  );
 });

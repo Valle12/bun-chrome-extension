@@ -4,8 +4,8 @@ export type OnlyKnown<T> = {
   [K in keyof T as string extends K
     ? never
     : number extends K
-    ? never
-    : K]: T[K];
+      ? never
+      : K]: T[K];
 };
 
 // Manifest
@@ -82,6 +82,11 @@ export type BCEConfig = Omit<
   | "drop"
   | "throw"
   | "tsconfig"
+  | "features"
+  | "jsx"
+  | "reactFastRefresh"
+  | "files"
+  | "metafile"
 >;
 
 export function defineConfig(config: BCEConfig): BCEConfig {
@@ -97,5 +102,11 @@ export type ChromeMessage = "activate";
 declare module "bun" {
   interface Env {
     LOCAL: "true" | "false";
+  }
+}
+
+declare global {
+  interface ReadableStream<R = any> {
+    [Symbol.asyncIterator](): AsyncIterator<R>;
   }
 }
