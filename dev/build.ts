@@ -40,13 +40,13 @@ export class Build {
 
   async setServiceWorker() {
     let composeContent = await Bun.file(
-      resolve(import.meta.dir, "composeTemplate.js")
+      resolve(import.meta.dir, "composeTemplate.js"),
     ).text();
 
     if (
       !this.manifest.background ||
       !(await Bun.file(
-        resolve(this.cwd, this.originalServiceWorker as string)
+        resolve(this.cwd, this.originalServiceWorker as string),
       ).exists())
     ) {
       console.log("No background service worker found, creating one...");
@@ -56,8 +56,8 @@ export class Build {
         "// IMPORT // Do not remove!",
         `import "./${this.relativePosixPath(
           this.cwd,
-          this.originalServiceWorker as string
-        )}";`
+          this.originalServiceWorker as string,
+        )}";`,
       );
     }
 
@@ -82,7 +82,7 @@ export class Build {
   startServer() {
     Bun.serve<WebSocketType, string>({
       fetch(req, server) {
-        if (server.upgrade(req)) return;
+        if (server.upgrade(req, { data: "reload" })) return;
         return new Response("Upgrade failed!", { status: 500 });
       },
       websocket: {
@@ -123,7 +123,7 @@ export class Build {
       const manifestModule = await import(
         resolve(
           process.cwd(),
-          `manifest.ts?cacheBust=${Date.now()}${Math.random()}`
+          `manifest.ts?cacheBust=${Date.now()}${Math.random()}`,
         )
       );
       this.manifest = manifestModule.manifest;
@@ -181,7 +181,7 @@ export class Build {
 
         let pathInOutdir = this.relativePosixPath(
           this.config.outdir,
-          output.path
+          output.path,
         );
 
         let outputPath = output.path;
@@ -194,7 +194,7 @@ export class Build {
           const resolvedOutput = resolve(dirname(output.path), module.default);
           pathInOutdir = this.relativePosixPath(
             this.config.outdir,
-            resolvedOutput
+            resolvedOutput,
           );
           outputPath = pathInOutdir;
           const pathInOutdirParts = outputPath.split("-");
@@ -211,7 +211,7 @@ export class Build {
           console.error(
             "Could not find entrypoint for output",
             entrypoints,
-            output
+            output,
           );
           continue;
         }
@@ -223,8 +223,8 @@ export class Build {
           entrypoint,
           this.relativePosixPath(
             this.config.outdir,
-            resolve(this.config.outdir, outputPath)
-          )
+            resolve(this.config.outdir, outputPath),
+          ),
         );
       }
       this.manifest = JSON.parse(manifestJson);
@@ -240,7 +240,7 @@ export class Build {
   extractPaths(
     paths: string[] = [],
     currentPath = "",
-    obj: any = this.manifest
+    obj: any = this.manifest,
   ) {
     for (let [key, value] of Object.entries(obj)) {
       const prefix = currentPath === "" ? "" : ".";
