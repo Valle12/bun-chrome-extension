@@ -59,13 +59,23 @@ describe("bce integration", () => {
         throw new Error(`Build failed: ${bceJsPath} does not exist`);
       }
 
-      const proc = Bun.spawn({
-        cmd: [process.execPath, bceJsPath, "--dev"],
+      // Debug info
+      console.log("execPath:", process.execPath);
+      console.log("bceJsPath:", bceJsPath);
+      console.log("cwd:", cwd);
+
+      const proc = Bun.spawn([process.execPath, bceJsPath, "--dev"], {
         cwd,
         env: { ...process.env, LOCAL: "true" },
         stdout: "pipe",
         stderr: "pipe",
       });
+
+      if (!proc || !proc.stdout) {
+        throw new Error(
+          `Spawn failed. proc=${!!proc}, stdout=${!!proc?.stdout}, execPath=${process.execPath}`,
+        );
+      }
 
       const logs: string[] = [];
       const decoder = new TextDecoder();
