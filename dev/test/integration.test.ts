@@ -60,7 +60,7 @@ describe("bce integration", () => {
       }
 
       const proc = Bun.spawn({
-        cmd: ["bun", bceJsPath, "--dev"],
+        cmd: [process.execPath, "run", bceJsPath, "--dev"],
         cwd,
         env: { ...process.env, LOCAL: "true" },
         stdout: "pipe",
@@ -68,7 +68,11 @@ describe("bce integration", () => {
       });
 
       if (!proc.stdout) {
-        throw new Error("Failed to spawn process - stdout is undefined");
+        // Try to get more info about why spawn failed
+        const exitCode = await proc.exited;
+        throw new Error(
+          `Failed to spawn process at ${bceJsPath} with cwd ${cwd}. Exit code: ${exitCode}`,
+        );
       }
 
       const logs: string[] = [];
