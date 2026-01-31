@@ -24,6 +24,7 @@ if (isDev) await build.initDev();
 await build.parse();
 if (isDev) {
   build.startServer();
+  if (process.send) process.send("websocket ready");
 } else {
   console.log("Build completed!");
 }
