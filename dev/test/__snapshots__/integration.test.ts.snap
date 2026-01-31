@@ -1,6 +1,6 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`bce integration test if watching and reloading works as expected: manifest-0 1`] = `
+exports[`bce integration dev server watches for changes and rebuilds correctly 1`] = `
 "{
   "manifest_version": 3,
   "name": "Test",
@@ -19,12 +19,12 @@ exports[`bce integration test if watching and reloading works as expected: manif
 }"
 `;
 
-exports[`bce integration test if watching and reloading works as expected: solace-0 1`] = `
+exports[`bce integration dev server watches for changes and rebuilds correctly 2`] = `
 "class o{constructor(){console.log("Solace")}}new o;
 "
 `;
 
-exports[`bce integration test if watching and reloading works as expected: manifest-1 1`] = `
+exports[`bce integration dev server watches for changes and rebuilds correctly 3`] = `
 "{
   "manifest_version": 3,
   "name": "Test",
@@ -43,95 +43,12 @@ exports[`bce integration test if watching and reloading works as expected: manif
 }"
 `;
 
-exports[`bce integration test if watching and reloading works as expected: solace-1 1`] = `
+exports[`bce integration dev server watches for changes and rebuilds correctly 4`] = `
 "class o{constructor(){console.log("Solace")}}new o;
 "
 `;
 
-exports[`bce integration test if watching and reloading works as expected: manifest-2 1`] = `
-"{
-  "manifest_version": 3,
-  "name": "Test",
-  "version": "0.0.1",
-  "background": {
-    "service_worker": "compose.js",
-    "type": "module"
-  },
-  "content_scripts": [
-    {
-      "js": []
-    }
-  ]
-}"
-`;
-
-exports[`bce integration test if watching and reloading works as expected: solace-2 1`] = `
-"class o{constructor(){console.log("Solace")}}new o;
-"
-`;
-
-exports[`bce integration test if watching and reloading works as expected: manifest-ts-0 1`] = `
-"import { defineManifest } from "../../../types";
-
-export const manifest = defineManifest({
-  name: "Test",
-  version: "0.0.1",
-  background: {
-    service_worker: "src/background.ts",
-  },
-  content_scripts: [
-    {
-      ts: [],
-    },
-  ],
-});
-"
-`;
-
-exports[`bce integration dev server watches for changes and rebuilds correctly: manifest-initial 1`] = `
-"{
-  "manifest_version": 3,
-  "name": "Test",
-  "version": "0.0.1",
-  "background": {
-    "service_worker": "compose.js",
-    "type": "module"
-  },
-  "content_scripts": [
-    {
-      "js": [
-        "src/solace.js"
-      ]
-    }
-  ]
-}"
-`;
-
-exports[`bce integration dev server watches for changes and rebuilds correctly: solace-initial 1`] = `
-"class o{constructor(){console.log("Solace")}}new o;
-"
-`;
-
-exports[`bce integration dev server watches for changes and rebuilds correctly: manifest-after-noop 1`] = `
-"{
-  "manifest_version": 3,
-  "name": "Test",
-  "version": "0.0.1",
-  "background": {
-    "service_worker": "compose.js",
-    "type": "module"
-  },
-  "content_scripts": [
-    {
-      "js": [
-        "src/solace.js"
-      ]
-    }
-  ]
-}"
-`;
-
-exports[`bce integration dev server watches for changes and rebuilds correctly: manifest-after-removal 1`] = `
+exports[`bce integration dev server watches for changes and rebuilds correctly 5`] = `
 "{
   "manifest_version": 3,
   "name": "Test",
