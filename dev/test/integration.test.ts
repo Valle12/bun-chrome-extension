@@ -64,6 +64,7 @@ describe("bce integration", () => {
         env: { ...process.env, LOCAL: "true" },
         stdout: "inherit",
         stderr: "inherit",
+        stdin: "pipe",
       });
 
       try {
@@ -99,8 +100,8 @@ describe("bce integration", () => {
         expect(manifest3).toMatchSnapshot("manifest-after-removal");
         expect(manifest3).not.toContain("solace");
       } finally {
-        // proc.stdin.write("\u0003");
-        proc.kill("SIGINT");
+        proc.stdin.write("\u0003");
+        //proc.kill("SIGINT");
         await proc.exited;
       }
     },
