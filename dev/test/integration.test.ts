@@ -49,8 +49,7 @@ describe("bce integration", () => {
 
     await Bun.sleep(2000);
 
-    console.log(proc);
-    proc.kill("SIGINT");
+    if (proc.kill) proc.kill("SIGINT");
     await proc.exited;
   });
 });
