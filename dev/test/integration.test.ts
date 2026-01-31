@@ -67,6 +67,10 @@ describe("bce integration", () => {
         stdin: "pipe",
       });
 
+      if (!proc) {
+        console.error("Failed to start dev server process");
+      }
+
       try {
         // 1. Wait for initial build
         const manifest1 = await waitForFile(distManifestPath);
@@ -99,6 +103,8 @@ describe("bce integration", () => {
         const manifest3 = await Bun.file(distManifestPath).text();
         expect(manifest3).toMatchSnapshot("manifest-after-removal");
         expect(manifest3).not.toContain("solace");
+      } catch (e) {
+        console.error("Test failes: " + e);
       } finally {
         proc.stdin.write("\u0003");
         //proc.kill("SIGINT");
