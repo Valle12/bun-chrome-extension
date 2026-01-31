@@ -99,7 +99,8 @@ describe("bce integration", () => {
         expect(manifest3).toMatchSnapshot("manifest-after-removal");
         expect(manifest3).not.toContain("solace");
       } finally {
-        proc.kill();
+        // proc.stdin.write("\u0003");
+        proc.kill("SIGINT");
         await proc.exited;
       }
     },
