@@ -27,7 +27,7 @@ describe("bce integration", () => {
     await rm(run, { recursive: true, force: true });
   });
 
-  test.only(
+  test(
     "dev server watches for changes and rebuilds correctly",
     async () => {
       expect.assertions(5);
