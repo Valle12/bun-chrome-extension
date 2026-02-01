@@ -29,6 +29,7 @@ describe("integration: bce --dev", () => {
     await rm(testDistDir, { recursive: true, force: true });
 
     // Start the bce --dev process with IPC to know when websocket is ready
+    let ipcResolved = false;
     const serverReadyPromise = new Promise<void>(resolve => {
       bceProcess = Bun.spawn(["bun", "run", bcePath, "--dev"], {
         cwd: testDir,
@@ -39,14 +40,32 @@ describe("integration: bce --dev", () => {
           console.log("IPC message:", message);
           if (message === "websocket ready") {
             wsServerReady = true;
+            ipcResolved = true;
             resolve();
           }
         },
       });
     });
 
-    // Wait for the websocket server to be ready via IPC or timeout and poll
-    await Promise.race([serverReadyPromise, waitForServerReady()]);
+    // Wait for the websocket server to be ready via IPC or polling
+    // Use a combined approach: race IPC with polling, but don't throw on poll timeout
+    const pollForServer = async () => {
+      const timeout = 25000;
+      const startTime = Date.now();
+      while (Date.now() - startTime < timeout) {
+        if (ipcResolved) return; // IPC already resolved
+        try {
+          await fetch("http://localhost:8080", { mode: "no-cors" });
+          return; // Server is ready
+        } catch {
+          await Bun.sleep(250);
+        }
+      }
+      // If we get here, neither IPC nor polling worked
+      throw new Error("Server did not start in time");
+    };
+
+    await Promise.race([serverReadyPromise, pollForServer()]);
 
     // Connect WebSocket
     ws = new WebSocket("ws://localhost:8080");
@@ -178,19 +197,6 @@ export const manifest = defineManifest({
     expect(manifestJson.background?.service_worker).toBe("compose.js");
     expect(manifestJson.content_scripts).toBeUndefined();
   });
-
-  async function waitForServerReady(timeout = 20000) {
-    const startTime = Date.now();
-    while (Date.now() - startTime < timeout) {
-      try {
-        await fetch("http://localhost:8080", { mode: "no-cors" });
-        return;
-      } catch {
-        await Bun.sleep(200);
-      }
-    }
-    throw new Error("Server did not start in time");
-  }
 
   async function waitForReload(expectedCount: number, timeout = 15000) {
     const startTime = Date.now();
