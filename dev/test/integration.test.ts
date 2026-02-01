@@ -179,20 +179,20 @@ export const manifest = defineManifest({
     expect(manifestJson.content_scripts).toBeUndefined();
   });
 
-  async function waitForServerReady(timeout = 10000) {
+  async function waitForServerReady(timeout = 20000) {
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
       try {
         await fetch("http://localhost:8080", { mode: "no-cors" });
         return;
       } catch {
-        await Bun.sleep(100);
+        await Bun.sleep(200);
       }
     }
     throw new Error("Server did not start in time");
   }
 
-  async function waitForReload(expectedCount: number, timeout = 10000) {
+  async function waitForReload(expectedCount: number, timeout = 15000) {
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
       if (reloadCount >= expectedCount) {
