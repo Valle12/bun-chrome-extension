@@ -84,7 +84,28 @@ describe("integration: bce --dev", () => {
 
     // Kill the bce process
     if (bceProcess) {
-      bceProcess.kill();
+      // bceProcess.kill() may not work on all platforms (e.g., GitHub Actions Ubuntu)
+      // Try multiple approaches to ensure the process is terminated
+      if (typeof bceProcess.kill === "function") {
+        try {
+          bceProcess.kill();
+        } catch {
+          // Fallback: kill by PID if available
+          if (bceProcess.pid) {
+            try {
+              process.kill(bceProcess.pid, "SIGTERM");
+            } catch {
+              // Process may already be dead
+            }
+          }
+        }
+      } else if (bceProcess.pid) {
+        try {
+          process.kill(bceProcess.pid, "SIGTERM");
+        } catch {
+          // Process may already be dead
+        }
+      }
     }
 
     // Restore original file contents
