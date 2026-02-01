@@ -1,7 +1,7 @@
+import type { Subprocess } from "bun";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readdir, rm, writeFile } from "fs/promises";
 import { resolve } from "path";
-import type { Subprocess } from "bun";
 
 const testDir = resolve(import.meta.dir, "resources/bceIntegration");
 const testDistDir = resolve(testDir, "dist");
@@ -28,7 +28,7 @@ describe("integration: bce --dev", () => {
     await rm(testDistDir, { recursive: true, force: true });
 
     // Start the bce --dev process with IPC to know when websocket is ready
-    const serverReadyPromise = new Promise<void>((resolve) => {
+    const serverReadyPromise = new Promise<void>(resolve => {
       bceProcess = Bun.spawn(["bun", "run", bcePath, "--dev"], {
         cwd: testDir,
         env: { ...process.env, LOCAL: "true" },
@@ -45,10 +45,7 @@ describe("integration: bce --dev", () => {
     });
 
     // Wait for the websocket server to be ready via IPC or timeout and poll
-    await Promise.race([
-      serverReadyPromise,
-      waitForServerReady(),
-    ]);
+    await Promise.race([serverReadyPromise, waitForServerReady()]);
 
     // Connect WebSocket
     ws = new WebSocket("ws://localhost:8080");
@@ -56,19 +53,19 @@ describe("integration: bce --dev", () => {
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(
         () => reject(new Error("WebSocket connection timeout")),
-        5000
+        5000,
       );
       ws.onopen = () => {
         clearTimeout(timeout);
         resolve();
       };
-      ws.onerror = (err) => {
+      ws.onerror = err => {
         clearTimeout(timeout);
         reject(err);
       };
     });
 
-    ws.onmessage = (event) => {
+    ws.onmessage = event => {
       if (event.data === "reload") {
         reloadCount++;
         console.log(`Reload #${reloadCount} received`);
@@ -103,12 +100,12 @@ describe("integration: bce --dev", () => {
     await Bun.sleep(500);
 
     const distFiles = await readdir(testDistDir, { recursive: true });
-    const distFilesList = distFiles.map((f) => f.toString());
+    const distFilesList = distFiles.map(f => f.toString());
 
     expect(distFilesList).toContain("manifest.json");
     // compose.js is the generated service worker that imports the original background.ts
     expect(distFilesList).toContain("compose.js");
-    expect(distFilesList.some((f) => f.includes("solace.js"))).toBe(true);
+    expect(distFilesList.some(f => f.includes("solace.js"))).toBe(true);
   });
 
   test("should trigger reload when saving solace.ts without changes", async () => {
@@ -125,9 +122,7 @@ describe("integration: bce --dev", () => {
 
     // Verify dist still has solace.js
     const distFiles = await readdir(testDistDir, { recursive: true });
-    expect(distFiles.some((f) => f.toString().includes("solace.js"))).toBe(
-      true
-    );
+    expect(distFiles.some(f => f.toString().includes("solace.js"))).toBe(true);
   });
 
   test("should rebuild without solace when removed from manifest", async () => {
@@ -184,7 +179,7 @@ export const manifest = defineManifest({
       await Bun.sleep(50);
     }
     throw new Error(
-      `Timeout waiting for reload. Expected ${expectedCount}, got ${reloadCount}`
+      `Timeout waiting for reload. Expected ${expectedCount}, got ${reloadCount}`,
     );
   }
 });
