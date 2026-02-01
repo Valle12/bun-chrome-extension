@@ -50,7 +50,7 @@ new KeepAlive();
 exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 1`] = `
 "import { Connection } from "./connection";
 import { KeepAlive } from "./keepAlive";
-import "./dev/test/resources/test1.ts";
+import "./test/resources/test1.ts";
 
 new Connection().connect();
 new KeepAlive();
