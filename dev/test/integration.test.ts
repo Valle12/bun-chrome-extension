@@ -1,96 +1,190 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { rm } from "fs/promises";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { readdir, rm, writeFile } from "fs/promises";
 import { resolve } from "path";
-import { build } from "../packager";
-import type { IPCMessage } from "../types";
-import { Connection } from "./resources/bceIntegration/connection";
+import type { Subprocess } from "bun";
 
-describe("bce integration", () => {
-  let originalManifestContent: string;
-  const cwd = resolve(import.meta.dir, "resources/bceIntegration");
-  const dist = resolve(cwd, "dist");
-  const run = resolve(cwd, "run");
-  const srcManifestPath = resolve(cwd, "manifest.ts");
-  const srcSolacePath = resolve(cwd, "src/solace.ts");
-  const distManifestPath = resolve(dist, "manifest.json");
-  const distSolacePath = resolve(dist, "src/solace.js");
+const testDir = resolve(import.meta.dir, "resources/bceIntegration");
+const testDistDir = resolve(testDir, "dist");
+const manifestPath = resolve(testDir, "manifest.ts");
+const solacePath = resolve(testDir, "src/solace.ts");
+const bcePath = resolve(import.meta.dir, "../bce.ts");
 
-  beforeEach(async () => {
-    originalManifestContent = await Bun.file(srcManifestPath).text();
-    await rm(dist, { recursive: true, force: true });
-    await rm(run, { recursive: true, force: true });
-  });
+// Store original file contents for restoration
+let originalManifestContent: string;
+let originalSolaceContent: string;
 
-  afterEach(async () => {
-    await Bun.write(srcManifestPath, originalManifestContent);
-    await rm(dist, { recursive: true, force: true });
-    await rm(run, { recursive: true, force: true });
-  });
+describe("integration: bce --dev", () => {
+  let bceProcess: Subprocess;
+  let ws: WebSocket;
+  let reloadCount = 0;
+  let wsServerReady = false;
 
-  test(
-    "dev server watches for changes and rebuilds correctly",
-    async () => {
-      expect.assertions(5);
+  beforeAll(async () => {
+    // Store original file contents
+    originalManifestContent = await Bun.file(manifestPath).text();
+    originalSolaceContent = await Bun.file(solacePath).text();
 
-      await build(run);
+    // Clean up any previous dist folder
+    await rm(testDistDir, { recursive: true, force: true });
 
-      let counter = 0;
-      const proc = Bun.spawn(["bun", resolve(run, "bce.js"), "--dev"], {
-        cwd,
+    // Start the bce --dev process with IPC to know when websocket is ready
+    const serverReadyPromise = new Promise<void>((resolve) => {
+      bceProcess = Bun.spawn(["bun", "run", bcePath, "--dev"], {
+        cwd: testDir,
         env: { ...process.env, LOCAL: "true" },
         stdout: "inherit",
         stderr: "inherit",
-        stdin: "pipe",
-        async ipc(message: IPCMessage) {
-          if (message === "rebuild complete") {
-            if (counter == 1) {
-              counter++;
-              new Connection().connect();
-
-              const manifestFile = Bun.file(distManifestPath);
-              const manifestContent = await manifestFile.text();
-              expect(manifestContent).toMatchSnapshot();
-
-              const distSolaceFile = Bun.file(distSolacePath);
-              const distSolaceContent = await distSolaceFile.text();
-              expect(distSolaceContent).toMatchSnapshot();
-
-              const srcManifestFile = Bun.file(srcManifestPath);
-              const srcManifestContent = (
-                await srcManifestFile.text()
-              ).replaceAll('ts: ["src/solace.ts"]', "ts: []");
-              await Bun.write(srcManifestFile, srcManifestContent);
-            } else if (counter === 2) {
-              counter++;
-              new Connection().connect();
-
-              const manifestFile = Bun.file(distManifestPath);
-              const manifestContent = await manifestFile.text();
-              expect(manifestContent).toMatchSnapshot();
-
-              if (proc.kill) proc.kill("SIGINT"); // I have no idea why that is needed for ubuntu
-            }
-          } else if (message === "websocket ready") {
-            counter++;
-            new Connection().connect();
-
-            const manifestFile = Bun.file(distManifestPath);
-            const manifestContent = await manifestFile.text();
-            expect(manifestContent).toMatchSnapshot();
-
-            const distSolaceFile = Bun.file(distSolacePath);
-            const distSolaceContent = await distSolaceFile.text();
-            expect(distSolaceContent).toMatchSnapshot();
-
-            const srcSolaceFile = Bun.file(srcSolacePath);
-            const srcSolaceContent = await srcSolaceFile.text();
-            await Bun.write(srcSolaceFile, srcSolaceContent);
+        ipc(message) {
+          console.log("IPC message:", message);
+          if (message === "websocket ready") {
+            wsServerReady = true;
+            resolve();
           }
         },
       });
+    });
 
-      await proc.exited;
-    },
-    { timeout: 20000, retry: 4 },
-  );
+    // Wait for the websocket server to be ready via IPC or timeout and poll
+    await Promise.race([
+      serverReadyPromise,
+      waitForServerReady(),
+    ]);
+
+    // Connect WebSocket
+    ws = new WebSocket("ws://localhost:8080");
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error("WebSocket connection timeout")),
+        5000
+      );
+      ws.onopen = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+      ws.onerror = (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      };
+    });
+
+    ws.onmessage = (event) => {
+      if (event.data === "reload") {
+        reloadCount++;
+        console.log(`Reload #${reloadCount} received`);
+      }
+    };
+
+    // Wait for initial reload on connection
+    await waitForReload(1);
+  });
+
+  afterAll(async () => {
+    // Close WebSocket
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.close();
+    }
+
+    // Kill the bce process
+    if (bceProcess) {
+      bceProcess.kill();
+    }
+
+    // Restore original file contents
+    await writeFile(manifestPath, originalManifestContent);
+    await writeFile(solacePath, originalSolaceContent);
+
+    // Clean up dist folder
+    await rm(testDistDir, { recursive: true, force: true });
+  });
+
+  test("should have initial build with solace.js in dist", async () => {
+    // Wait a bit for initial build to complete
+    await Bun.sleep(500);
+
+    const distFiles = await readdir(testDistDir, { recursive: true });
+    const distFilesList = distFiles.map((f) => f.toString());
+
+    expect(distFilesList).toContain("manifest.json");
+    // compose.js is the generated service worker that imports the original background.ts
+    expect(distFilesList).toContain("compose.js");
+    expect(distFilesList.some((f) => f.includes("solace.js"))).toBe(true);
+  });
+
+  test("should trigger reload when saving solace.ts without changes", async () => {
+    const initialReloadCount = reloadCount;
+
+    // Touch the file (save without changes)
+    const content = await Bun.file(solacePath).text();
+    await writeFile(solacePath, content);
+
+    // Wait for reload
+    await waitForReload(initialReloadCount + 1);
+
+    expect(reloadCount).toBe(initialReloadCount + 1);
+
+    // Verify dist still has solace.js
+    const distFiles = await readdir(testDistDir, { recursive: true });
+    expect(distFiles.some((f) => f.toString().includes("solace.js"))).toBe(
+      true
+    );
+  });
+
+  test("should rebuild without solace when removed from manifest", async () => {
+    const initialReloadCount = reloadCount;
+
+    // Update manifest to remove solace.ts from content_scripts
+    const newManifestContent = `import { defineManifest } from "../../../types";
+
+export const manifest = defineManifest({
+  name: "Test",
+  version: "0.0.1",
+  background: {
+    service_worker: "src/background.ts",
+  },
+  // content_scripts removed - no solace.ts reference
+});
+`;
+    await writeFile(manifestPath, newManifestContent);
+
+    // Wait for rebuild
+    await waitForReload(initialReloadCount + 1);
+
+    expect(reloadCount).toBe(initialReloadCount + 1);
+
+    // Read the manifest.json to verify solace is no longer referenced
+    const manifestJsonPath = resolve(testDistDir, "manifest.json");
+    const manifestJson = await Bun.file(manifestJsonPath).json();
+
+    // The built manifest should not have content_scripts anymore
+    expect(manifestJson.name).toBe("Test");
+    expect(manifestJson.background?.service_worker).toBe("compose.js");
+    expect(manifestJson.content_scripts).toBeUndefined();
+  });
+
+  async function waitForServerReady(timeout = 10000) {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      try {
+        await fetch("http://localhost:8080", { mode: "no-cors" });
+        return;
+      } catch {
+        await Bun.sleep(100);
+      }
+    }
+    throw new Error("Server did not start in time");
+  }
+
+  async function waitForReload(expectedCount: number, timeout = 10000) {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeout) {
+      if (reloadCount >= expectedCount) {
+        return;
+      }
+      await Bun.sleep(50);
+    }
+    throw new Error(
+      `Timeout waiting for reload. Expected ${expectedCount}, got ${reloadCount}`
+    );
+  }
 });
