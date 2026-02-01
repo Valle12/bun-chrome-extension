@@ -19,6 +19,7 @@ describe("integration: bce --dev", () => {
   let reloadCount = 0;
   let wsServerReady = false;
 
+  // Increase timeout for beforeAll as it starts a server and waits for connections
   beforeAll(async () => {
     // Store original file contents
     originalManifestContent = await Bun.file(manifestPath).text();
@@ -74,7 +75,7 @@ describe("integration: bce --dev", () => {
 
     // Wait for initial reload on connection
     await waitForReload(1);
-  });
+  }, 30000);
 
   afterAll(async () => {
     // Close WebSocket
@@ -114,7 +115,7 @@ describe("integration: bce --dev", () => {
 
     // Clean up dist folder
     await rm(testDistDir, { recursive: true, force: true });
-  });
+  }, 30000);
 
   test("should have initial build with solace.js in dist", async () => {
     // Wait a bit for initial build to complete
