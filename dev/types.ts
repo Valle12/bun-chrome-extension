@@ -82,8 +82,8 @@ export type BCEConfig = Omit<
   | "drop"
   | "throw"
   | "tsconfig"
-  | "jsx"
   | "features"
+  | "jsx"
   | "reactFastRefresh"
   | "files"
   | "metafile"
@@ -99,8 +99,23 @@ export type WebSocketType = "reload";
 // Chrome Messaging
 export type ChromeMessage = "activate";
 
+// IPC Messaging
+export type IPCMessage = "rebuild complete" | "websocket ready";
+
 declare module "bun" {
   interface Env {
     LOCAL: "true" | "false";
+  }
+}
+
+declare global {
+  interface ReadableStream<R = any> {
+    [Symbol.asyncIterator](): AsyncIterator<R>;
+  }
+
+  namespace NodeJS {
+    interface Process {
+      send?(message: IPCMessage): boolean;
+    }
   }
 }
