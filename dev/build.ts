@@ -1,5 +1,6 @@
 import type { ServerWebSocket } from "bun";
 import { watch } from "chokidar";
+import { rm } from "fs/promises";
 import { dirname, extname, relative, resolve } from "path";
 import { posix } from "path/posix";
 import { stdin } from "process";
@@ -127,6 +128,7 @@ export class Build {
         )
       );
       this.manifest = manifestModule.manifest;
+      await rm(this.config.outdir, { recursive: true, force: true });
       await this.setServiceWorker();
       await this.parse();
       this.ws.send("reload");
