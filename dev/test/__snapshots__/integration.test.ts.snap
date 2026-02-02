@@ -1,4 +1,4 @@
-// Bun Snapshot v1, https://goo.gl/fbAQLP
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`bce integration test if watching and reloading works as expected 1`] = `
 "{
@@ -63,9 +63,4 @@ exports[`bce integration test if watching and reloading works as expected 5`] = 
     }
   ]
 }"
-`;
-
-exports[`bce integration test if watching and reloading works as expected 6`] = `
-"class o{constructor(){console.log("Solace")}}new o;
-"
 `;

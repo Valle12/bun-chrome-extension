@@ -1,4 +1,4 @@
-// Bun Snapshot v1, https://goo.gl/fbAQLP
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`parseManifest test with import export to be trimmed while building 1`] = `
 "// dev/types.ts
@@ -50,7 +50,7 @@ new KeepAlive();
 exports[`setServiceWorker test with service_worker, pointing to an existing file, creating compose 1`] = `
 "import { Connection } from "./connection";
 import { KeepAlive } from "./keepAlive";
-import "./dev/test/resources/test1.ts";
+import "./test/resources/test1.ts";
 
 new Connection().connect();
 new KeepAlive();

@@ -1,4 +1,4 @@
-import type { Serve, Server, ServerWebSocket } from "bun";
+import type { ServerWebSocket } from "bun";
 import {
   afterEach,
   beforeEach,
@@ -55,31 +55,33 @@ beforeEach(async () => {
     version: "0.0.1",
   });
   build.config.outdir = resolve(cwd, "dist");
+  build.cwd = cwd;
+  build.compose = resolve(cwd, "compose.js");
   tsTest1 = build.posixPath(resolve(cwd, "test/resources/test1.ts"));
   tsTest2 = build.posixPath(resolve(cwd, "test/resources/test2.ts"));
   tsTest3 = build.posixPath(resolve(cwd, "test/resources/test3.ts"));
   importExportTest = build.posixPath(
-    resolve(cwd, "test/resources/importExport.ts")
+    resolve(cwd, "test/resources/importExport.ts"),
   );
   popupTest = build.posixPath(resolve(cwd, "test/resources/popup.html"));
   popupWithImgTest = build.posixPath(
-    resolve(cwd, "test/resources/popup-with-img.html")
+    resolve(cwd, "test/resources/popup-with-img.html"),
   );
   nestedPopupTest = resolve(cwd, "test/resources/src/nestedPopup.html");
   popupWithStylesheetTest = build.posixPath(
-    resolve(cwd, "test/resources/popup-with-stylesheet.html")
+    resolve(cwd, "test/resources/popup-with-stylesheet.html"),
   );
   optionsPageTest = build.posixPath(
-    resolve(cwd, "test/resources/optionsPage.html")
+    resolve(cwd, "test/resources/optionsPage.html"),
   );
   optionsPageWithStylesheetTest = build.posixPath(
-    resolve(cwd, "test/resources/optionsPage-with-stylesheet.html")
+    resolve(cwd, "test/resources/optionsPage-with-stylesheet.html"),
   );
   optionsUiTest = build.posixPath(
-    resolve(cwd, "test/resources/optionsUI.html")
+    resolve(cwd, "test/resources/optionsUI.html"),
   );
   optionsUiWithStylesheetTest = build.posixPath(
-    resolve(cwd, "test/resources/optionsUI-with-stylesheet.html")
+    resolve(cwd, "test/resources/optionsUI-with-stylesheet.html"),
   );
   cssTest1 = build.posixPath(resolve(cwd, "test/resources/test1.css"));
   img16 = build.posixPath(resolve(cwd, "public/icons/16.png"));
@@ -408,7 +410,7 @@ describe("parseManifest", () => {
 
     const popupPath = resolve(
       build.config.outdir,
-      build.manifest.action?.default_popup as string
+      build.manifest.action?.default_popup as string,
     );
     const popup = await Bun.file(popupPath).text();
     const imgPath = popup.match(/<img src="([^"]+)"/)?.[1] as string;
@@ -492,6 +494,7 @@ describe("parseManifest", () => {
   });
 
   test("test with import export to be trimmed while building", async () => {
+    const originalCwd = process.cwd();
     process.chdir(resolve(import.meta.dir, "..", ".."));
     build.manifest = defineManifest({
       name: "test",
@@ -525,6 +528,7 @@ describe("parseManifest", () => {
       version: "0.0.1",
     });
     expect(console.log).toHaveBeenNthCalledWith(2, "test");
+    process.chdir(originalCwd);
   });
 
   test("test with content_scripts info", async () => {
@@ -639,7 +643,7 @@ describe("parseManifest", () => {
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(build.manifest.action?.default_popup).toBe(
-      "popup-with-stylesheet.html"
+      "popup-with-stylesheet.html",
     );
   });
 
@@ -787,20 +791,20 @@ describe("parseManifest", () => {
       plugins: [exportRemover, sassCompiler],
     });
     expect(build.manifest.action?.default_popup).toBe(
-      "popup-with-stylesheet.html"
+      "popup-with-stylesheet.html",
     );
     expect(build.manifest.options_page).toBe(
-      "optionsPage-with-stylesheet.html"
+      "optionsPage-with-stylesheet.html",
     );
     expect(build.manifest.options_ui?.page).toBe(
-      "optionsUI-with-stylesheet.html"
+      "optionsUI-with-stylesheet.html",
     );
 
     const popup = await Bun.file(
       resolve(
         build.config.outdir,
-        build.manifest.action?.default_popup as string
-      )
+        build.manifest.action?.default_popup as string,
+      ),
     ).text();
     expect(popup).toContain("chunk-");
     expect(popup).toContain(".js");
@@ -809,20 +813,20 @@ describe("parseManifest", () => {
     const css = await Bun.file(
       resolve(
         build.config.outdir,
-        popup.substring(popup.indexOf("./chunk-"), popup.indexOf(".css") + 4)
-      )
+        popup.substring(popup.indexOf("./chunk-"), popup.indexOf(".css") + 4),
+      ),
     ).text();
     expect(css).toContain("prefers-color-scheme");
 
     const optionsPage = await Bun.file(
-      resolve(build.config.outdir, build.manifest.options_page as string)
+      resolve(build.config.outdir, build.manifest.options_page as string),
     ).text();
     expect(optionsPage).toContain("chunk-");
     expect(optionsPage).toContain(".js");
     expect(optionsPage).toContain(".css");
 
     const optionsUI = await Bun.file(
-      resolve(build.config.outdir, build.manifest.options_ui?.page as string)
+      resolve(build.config.outdir, build.manifest.options_ui?.page as string),
     ).text();
     expect(optionsUI).toContain("chunk-");
     expect(optionsUI).toContain(".js");
@@ -846,7 +850,7 @@ describe("parseManifest", () => {
     expect(console.error).toHaveBeenCalledWith(
       "Could not find entrypoint for output",
       [tsTest1],
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -909,20 +913,20 @@ describe("parseManifest", () => {
     const popup = await Bun.file(
       resolve(
         build.config.outdir,
-        build.manifest.action?.default_popup as string
-      )
+        build.manifest.action?.default_popup as string,
+      ),
     ).text();
     expect(popup).toContain("chunk-");
     expect(popup).toContain(".js");
 
     const optionsPage = await Bun.file(
-      resolve(build.config.outdir, build.manifest.options_page as string)
+      resolve(build.config.outdir, build.manifest.options_page as string),
     ).text();
     expect(optionsPage).toContain("chunk-");
     expect(optionsPage).toContain(".js");
 
     const optionsUI = await Bun.file(
-      resolve(build.config.outdir, build.manifest.options_ui?.page as string)
+      resolve(build.config.outdir, build.manifest.options_ui?.page as string),
     ).text();
     expect(optionsUI).toContain("chunk-");
     expect(optionsUI).toContain(".js");
@@ -954,7 +958,7 @@ describe("writeManifest", () => {
 
     expect(Bun.write).toHaveBeenCalledTimes(1);
     const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
+      resolve(build.config.outdir, "manifest.json"),
     ).json();
     expect(manifest.name).toBe("test");
     expect(manifest.version).toBe("0.0.1");
@@ -978,7 +982,7 @@ describe("writeManifest", () => {
 
     expect(Bun.write).toHaveBeenCalledTimes(1);
     const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
+      resolve(build.config.outdir, "manifest.json"),
     ).json();
     const contentScripts =
       manifest.content_scripts as CustomContentScriptTest[];
@@ -1005,7 +1009,7 @@ describe("writeManifest", () => {
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
+      resolve(build.config.outdir, "manifest.json"),
     ).json();
     const icons = manifest.icons as Icons;
     expect(icons["16"]).toStartWith("16-");
@@ -1028,11 +1032,11 @@ describe("writeManifest", () => {
     expect(Bun.build).toHaveBeenCalledTimes(1);
     expect(Bun.write).toHaveBeenCalledTimes(1);
     const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
+      resolve(build.config.outdir, "manifest.json"),
     ).json();
     expect(manifest.action?.default_popup).toBe("popup-with-img.html");
     const popup = await Bun.file(
-      resolve(build.config.outdir, "popup-with-img.html")
+      resolve(build.config.outdir, "popup-with-img.html"),
     ).text();
     expect(popup).toContain('src="./test-');
     expect(popup).toContain(".png");
@@ -1070,7 +1074,7 @@ describe("writeManifest", () => {
     });
     expect(Bun.write).toHaveBeenCalledTimes(5);
     const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
+      resolve(build.config.outdir, "manifest.json"),
     ).json();
     const icons = manifest.icons as Icons;
     expect(icons["16"]).toStartWith("16-");
@@ -1110,7 +1114,7 @@ describe("writeManifest", () => {
     });
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
-      resolve(build.config.outdir, "manifest.json")
+      resolve(build.config.outdir, "manifest.json"),
     ).json();
     const icons = manifest.icons as Icons;
     expect(icons["16"]).toStartWith("16-");
@@ -1180,7 +1184,7 @@ describe("relativePosixPath", () => {
   test("test from random path to relative posix", () => {
     const relativePath = build.relativePosixPath(
       build.config.outdir,
-      build.posixPath(resolve(build.config.outdir, "test", "test"))
+      build.posixPath(resolve(build.config.outdir, "test", "test")),
     );
 
     expect(relativePath).toBe("test/test");
@@ -1189,7 +1193,7 @@ describe("relativePosixPath", () => {
   test("test from posix to relative posix", () => {
     const relativePath = build.relativePosixPath(
       build.posixPath(build.config.outdir),
-      build.posixPath(resolve(build.config.outdir, "test", "test"))
+      build.posixPath(resolve(build.config.outdir, "test", "test")),
     );
 
     expect(relativePath).toBe("test/test");
@@ -1254,11 +1258,11 @@ describe("setServiceWorker", () => {
 
     expect(console.log).toHaveBeenCalledTimes(1);
     expect(console.log).toHaveBeenCalledWith(
-      "No background service worker found, creating one..."
+      "No background service worker found, creating one...",
     );
     expect(Bun.file).toHaveBeenCalledTimes(1);
     expect(Bun.file).toHaveBeenCalledWith(
-      resolve(build.config.outdir, "composeTemplate.js")
+      resolve(build.config.outdir, "composeTemplate.js"),
     );
     const compose = resolve(build.cwd, "compose.js");
     expect(Bun.write).toHaveBeenCalledTimes(1);
@@ -1309,7 +1313,7 @@ describe("setServiceWorker", () => {
 
     expect(console.log).toHaveBeenCalledTimes(1);
     expect(console.log).toHaveBeenCalledWith(
-      "Background service worker found, creating compose..."
+      "Background service worker found, creating compose...",
     );
     expect(build.relativePosixPath).toHaveBeenCalledTimes(1);
     expect(build.relativePosixPath).toHaveBeenCalledWith(build.cwd, tsTest1);
@@ -1327,11 +1331,11 @@ describe("setServiceWorker", () => {
 });
 
 describe("startServer", () => {
-  let capturedOptions = {} as Serve<WebSocketType>;
+  let capturedOptions = {} as Bun.Serve.Options<WebSocketType>;
 
   beforeEach(() => {
     spyOn(Bun, "serve").mockImplementation(options => {
-      capturedOptions = options as Serve<WebSocketType>;
+      capturedOptions = options as Bun.Serve.Options<WebSocketType>;
       return {} as any;
     });
   });
@@ -1344,14 +1348,14 @@ describe("startServer", () => {
     const reqMock = {} as Request;
     const serverMock = {
       upgrade: mock(() => false),
-    } as unknown as Server;
+    } as unknown as Bun.Server<"reload">;
 
     build.startServer();
 
-    const response = capturedOptions.fetch.call(
+    const response = capturedOptions.fetch?.call(
       serverMock,
       reqMock,
-      serverMock
+      serverMock,
     ) as Response;
     expect(serverMock.upgrade).toHaveBeenCalledTimes(1);
     expect(await response.text()).toBe("Upgrade failed!");
@@ -1362,14 +1366,14 @@ describe("startServer", () => {
     const reqMock = {} as Request;
     const serverMock = {
       upgrade: mock(() => true),
-    } as unknown as Server;
+    } as unknown as Bun.Server<"reload">;
 
     build.startServer();
 
-    const response = capturedOptions.fetch.call(
+    const response = capturedOptions.fetch?.call(
       serverMock,
       reqMock,
-      serverMock
+      serverMock,
     );
     expect(serverMock.upgrade).toHaveBeenCalledTimes(1);
     expect(typeof response).toBe("undefined");
@@ -1426,7 +1430,7 @@ describe("initDev", () => {
     spyOn(chokidar, "watch").mockImplementation((_paths, opts) => {
       if (opts) options = opts.ignored as chokidar.Matcher;
       return {
-        on: (_event: keyof chokidar.FSWatcherKnownEventMap, cb: Function) => {
+        on: (_event: keyof chokidar.FSWatcherEventMap, cb: Function) => {
           listener = cb;
         },
         close: mock(),
@@ -1500,7 +1504,7 @@ async function createTestPublicFolder(publicFolder: string, files: string[]) {
     const resolvedPublic = resolve(cwd, publicFolder);
     const outDir = resolve(
       resolvedPublic,
-      relative(join(cwd, "test/resources"), inputFilePath)
+      relative(join(cwd, "test/resources"), inputFilePath),
     );
     await Bun.write(outDir, inputFile);
   }
@@ -1520,7 +1524,7 @@ async function testWrittenManifest() {
   expect(build.parseManifest).toHaveBeenCalledTimes(1);
   expect(build.writeManifest).toHaveBeenCalledTimes(1);
   const manifest: FullManifest = await Bun.file(
-    resolve(build.config.outdir, "manifest.json")
+    resolve(build.config.outdir, "manifest.json"),
   ).json();
   expect(manifest.background?.service_worker).toBe("test1.js");
 }

@@ -4,8 +4,8 @@ export type OnlyKnown<T> = {
   [K in keyof T as string extends K
     ? never
     : number extends K
-    ? never
-    : K]: T[K];
+      ? never
+      : K]: T[K];
 };
 
 // Manifest
@@ -82,6 +82,11 @@ export type BCEConfig = Omit<
   | "drop"
   | "throw"
   | "tsconfig"
+  | "features"
+  | "jsx"
+  | "reactFastRefresh"
+  | "files"
+  | "metafile"
 >;
 
 export function defineConfig(config: BCEConfig): BCEConfig {
@@ -94,8 +99,23 @@ export type WebSocketType = "reload";
 // Chrome Messaging
 export type ChromeMessage = "activate";
 
+// IPC Messaging
+export type IPCMessage = "rebuild complete" | "websocket ready";
+
 declare module "bun" {
   interface Env {
     LOCAL: "true" | "false";
+  }
+}
+
+declare global {
+  interface ReadableStream<R = any> {
+    [Symbol.asyncIterator](): AsyncIterator<R>;
+  }
+
+  namespace NodeJS {
+    interface Process {
+      send?(message: IPCMessage): boolean;
+    }
   }
 }
