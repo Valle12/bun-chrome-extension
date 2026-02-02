@@ -5,38 +5,6 @@ import { resolve } from "path";
 import { build } from "../packager";
 import { Connection } from "./resources/bceIntegration/connection";
 
-async function waitForFile(
-  filePath: string,
-  timeout = 10000,
-): Promise<boolean> {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    if (await Bun.file(filePath).exists()) return true;
-    await Bun.sleep(100);
-  }
-  return false;
-}
-
-async function waitForServer(port: number, timeout = 10000): Promise<boolean> {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    try {
-      const ws = new WebSocket(`ws://localhost:${port}`);
-      await new Promise<void>((resolve, reject) => {
-        ws.onopen = () => {
-          ws.close();
-          resolve();
-        };
-        ws.onerror = reject;
-      });
-      return true;
-    } catch {
-      await Bun.sleep(100);
-    }
-  }
-  return false;
-}
-
 describe("bce integration", () => {
   let originalManifestContent: string;
   const cwd = resolve(import.meta.dir, "resources/bceIntegration");

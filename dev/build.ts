@@ -132,7 +132,6 @@ export class Build {
       await this.setServiceWorker();
       await this.parse();
       this.ws.send("reload");
-      if (process.send) process.send("rebuild complete");
     });
 
     stdin.on("data", data => {
