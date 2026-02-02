@@ -95,9 +95,7 @@ describe("bce integration", () => {
           resolve(dist, "src/solace.js"),
         ).exists();
         if (manifestCounter === 3) {
-          console.log("Final check, solace.js should be removed");
           expect(fileExists).toBeFalse();
-          console.log("Closing watchers and process...");
           distWatcher.close();
           proc.stdin.write("\u0003"); // Simulate CTRL + C
         } else {
