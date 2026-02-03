@@ -15,7 +15,6 @@ import * as path from "path";
 import { join, relative, resolve } from "path";
 import { stdin } from "process";
 import { Build } from "../build";
-import { exportRemover, sassCompiler } from "../plugins";
 import type {
   CustomContentScript,
   FullManifest,
@@ -400,13 +399,14 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [popupWithImgTest, img16],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover, sassCompiler],
-    });
+    const callArgs = (Bun.build as any).mock.calls[0][0];
+    expect(callArgs.entrypoints).toEqual([popupWithImgTest, img16]);
+    expect(callArgs.minify).toBe(build.config.minify);
+    expect(callArgs.outdir).toBe(build.config.outdir);
+    expect(callArgs.sourcemap).toBe(build.config.sourcemap);
+    expect(callArgs.plugins).toHaveLength(2);
+    expect(callArgs.plugins[0].name).toBe("exportRemover");
+    expect(callArgs.plugins[1].name).toBe("sassCompiler");
 
     const popupPath = resolve(
       build.config.outdir,
@@ -437,13 +437,17 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1, build.posixPath(nestedPopupTest)],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover, sassCompiler],
-    });
+    const callArgs = (Bun.build as any).mock.calls[0][0];
+    expect(callArgs.entrypoints).toEqual([
+      tsTest1,
+      build.posixPath(nestedPopupTest),
+    ]);
+    expect(callArgs.minify).toBe(build.config.minify);
+    expect(callArgs.outdir).toBe(build.config.outdir);
+    expect(callArgs.sourcemap).toBe(build.config.sourcemap);
+    expect(callArgs.plugins).toHaveLength(2);
+    expect(callArgs.plugins[0].name).toBe("exportRemover");
+    expect(callArgs.plugins[1].name).toBe("sassCompiler");
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     expect(build.manifest.background?.type).toBe("module");
     expect(build.manifest.action?.default_popup).toBe("src/nestedPopup.html");
@@ -507,6 +511,7 @@ describe("parseManifest", () => {
       minify: false,
       outdir: resolve(cwd, "dist"),
       sourcemap: "none",
+      silenceDeprecations: [],
     };
     spyOn(console, "log").mockImplementation(() => {});
 
@@ -745,13 +750,20 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [tsTest1, tsTest2, tsTest3, tsTest3, tsTest2],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover, sassCompiler],
-    });
+    const callArgs = (Bun.build as any).mock.calls[0][0];
+    expect(callArgs.entrypoints).toEqual([
+      tsTest1,
+      tsTest2,
+      tsTest3,
+      tsTest3,
+      tsTest2,
+    ]);
+    expect(callArgs.minify).toBe(build.config.minify);
+    expect(callArgs.outdir).toBe(build.config.outdir);
+    expect(callArgs.sourcemap).toBe(build.config.sourcemap);
+    expect(callArgs.plugins).toHaveLength(2);
+    expect(callArgs.plugins[0].name).toBe("exportRemover");
+    expect(callArgs.plugins[1].name).toBe("sassCompiler");
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -779,17 +791,18 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [
-        popupWithStylesheetTest,
-        optionsPageWithStylesheetTest,
-        optionsUiWithStylesheetTest,
-      ],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover, sassCompiler],
-    });
+    const callArgs = (Bun.build as any).mock.calls[0][0];
+    expect(callArgs.entrypoints).toEqual([
+      popupWithStylesheetTest,
+      optionsPageWithStylesheetTest,
+      optionsUiWithStylesheetTest,
+    ]);
+    expect(callArgs.minify).toBe(build.config.minify);
+    expect(callArgs.outdir).toBe(build.config.outdir);
+    expect(callArgs.sourcemap).toBe(build.config.sourcemap);
+    expect(callArgs.plugins).toHaveLength(2);
+    expect(callArgs.plugins[0].name).toBe("exportRemover");
+    expect(callArgs.plugins[1].name).toBe("sassCompiler");
     expect(build.manifest.action?.default_popup).toBe(
       "popup-with-stylesheet.html",
     );
@@ -883,20 +896,21 @@ describe("parseManifest", () => {
     await build.parseManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [
-        tsTest1,
-        popupTest,
-        optionsPageTest,
-        optionsUiTest,
-        tsTest2,
-        cssTest1,
-      ],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover, sassCompiler],
-    });
+    const callArgs = (Bun.build as any).mock.calls[0][0];
+    expect(callArgs.entrypoints).toEqual([
+      tsTest1,
+      popupTest,
+      optionsPageTest,
+      optionsUiTest,
+      tsTest2,
+      cssTest1,
+    ]);
+    expect(callArgs.minify).toBe(build.config.minify);
+    expect(callArgs.outdir).toBe(build.config.outdir);
+    expect(callArgs.sourcemap).toBe(build.config.sourcemap);
+    expect(callArgs.plugins).toHaveLength(2);
+    expect(callArgs.plugins[0].name).toBe("exportRemover");
+    expect(callArgs.plugins[1].name).toBe("sassCompiler");
     expect(build.manifest.background?.service_worker).toBe("test1.js");
     const contentScripts = build.manifest
       .content_scripts as CustomContentScriptTest[];
@@ -1065,13 +1079,14 @@ describe("writeManifest", () => {
     await build.writeManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [img16, img32, img48, img128],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover, sassCompiler],
-    });
+    const callArgs = (Bun.build as any).mock.calls[0][0];
+    expect(callArgs.entrypoints).toEqual([img16, img32, img48, img128]);
+    expect(callArgs.minify).toBe(build.config.minify);
+    expect(callArgs.outdir).toBe(build.config.outdir);
+    expect(callArgs.sourcemap).toBe(build.config.sourcemap);
+    expect(callArgs.plugins).toHaveLength(2);
+    expect(callArgs.plugins[0].name).toBe("exportRemover");
+    expect(callArgs.plugins[1].name).toBe("sassCompiler");
     expect(Bun.write).toHaveBeenCalledTimes(5);
     const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json"),
@@ -1105,13 +1120,14 @@ describe("writeManifest", () => {
     await build.writeManifest();
 
     expect(Bun.build).toHaveBeenCalledTimes(1);
-    expect(Bun.build).toHaveBeenCalledWith({
-      entrypoints: [testImg16],
-      minify: build.config.minify,
-      outdir: build.config.outdir,
-      sourcemap: build.config.sourcemap,
-      plugins: [exportRemover, sassCompiler],
-    });
+    const callArgs = (Bun.build as any).mock.calls[0][0];
+    expect(callArgs.entrypoints).toEqual([testImg16]);
+    expect(callArgs.minify).toBe(build.config.minify);
+    expect(callArgs.outdir).toBe(build.config.outdir);
+    expect(callArgs.sourcemap).toBe(build.config.sourcemap);
+    expect(callArgs.plugins).toHaveLength(2);
+    expect(callArgs.plugins[0].name).toBe("exportRemover");
+    expect(callArgs.plugins[1].name).toBe("sassCompiler");
     expect(Bun.write).toHaveBeenCalledTimes(2);
     const manifest: FullManifest = await Bun.file(
       resolve(build.config.outdir, "manifest.json"),

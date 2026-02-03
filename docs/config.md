@@ -54,3 +54,9 @@ Default **"none"**
 ```ts
 sourcemap: "none";
 ```
+
+### **silenceDeprecations**
+
+Specifies if specific deprecation warnings from sass package will be silenced.
+Will be passed to sass compiler.
+Default **[]**
