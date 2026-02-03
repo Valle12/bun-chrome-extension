@@ -30,12 +30,15 @@ export class Build {
       minify: true,
       sourcemap: "none",
       outdir: resolve(this.cwd, "dist"),
+      silenceDeprecations: [],
     };
 
     this.config = {
       minify: config.minify ?? defaultConfig.minify,
       sourcemap: config.sourcemap ?? defaultConfig.sourcemap,
       outdir: resolve(config.outdir ?? defaultConfig.outdir),
+      silenceDeprecations:
+        config.silenceDeprecations ?? defaultConfig.silenceDeprecations,
     };
   }
 
@@ -160,7 +163,7 @@ export class Build {
         minify: this.config.minify,
         outdir: this.config.outdir,
         sourcemap: this.config.sourcemap,
-        plugins: [exportRemover, sassCompiler],
+        plugins: [exportRemover, sassCompiler(this.config)],
       });
 
       let manifestJson = JSON.stringify(this.manifest, (_key, value) => {

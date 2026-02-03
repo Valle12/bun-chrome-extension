@@ -1,4 +1,5 @@
 import type { BuildConfig } from "bun";
+import type { DeprecationOrId } from "sass";
 
 export type OnlyKnown<T> = {
   [K in keyof T as string extends K
@@ -57,7 +58,9 @@ export function defineManifest(manifest: Manifest): FullManifest {
 }
 
 // BCE Config
-export type BCEConfig = Omit<
+export type BCEConfig = {
+  silenceDeprecations?: DeprecationOrId[];
+} & Omit<
   BuildConfig,
   | "entrypoints"
   | "target"

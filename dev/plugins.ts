@@ -1,5 +1,6 @@
 import type { BunPlugin } from "bun";
 import { compile } from "sass";
+import type { BCEConfig } from "./types";
 
 export const exportRemover: BunPlugin = {
   name: "exportRemover",
@@ -16,12 +17,12 @@ export const exportRemover: BunPlugin = {
   },
 };
 
-export const sassCompiler: BunPlugin = {
+export const sassCompiler = (config: Required<BCEConfig>): BunPlugin => ({
   name: "sassCompiler",
   setup(build) {
     build.onLoad({ filter: /\.scss$/ }, args => {
       const result = compile(args.path, {
-        silenceDeprecations: ["if-function"],
+        silenceDeprecations: config.silenceDeprecations,
       });
       return {
         contents: result.css,
@@ -29,7 +30,7 @@ export const sassCompiler: BunPlugin = {
       };
     });
   },
-};
+});
 
 function escapeRegex(str: string) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

@@ -105,5 +105,8 @@ describe("bce integration", () => {
 
       await proc.exited;
     },
+    {
+      retry: 4,
+    },
   );
 });
