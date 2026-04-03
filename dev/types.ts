@@ -90,6 +90,9 @@ export type BCEConfig = {
   | "reactFastRefresh"
   | "files"
   | "metafile"
+  | "allowUnresolved"
+  | "optimizeImports"
+  | "compile"
 >;
 
 export function defineConfig(config: BCEConfig): BCEConfig {
